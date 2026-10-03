@@ -93,30 +93,112 @@
             border: 1px solid rgba(37,211,102,0.2);
             border-top: 3px solid var(--primary);
         }
+        /* ── Executive Section & Interactive Scoring ── */
+        .exec-section { margin-top: 36px; width: 100%; box-sizing: border-box; }
+        .exec-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 14px; flex-wrap: wrap; }
+        .exec-header-text h3 { font-family: 'Playfair Display', serif; font-size: 1.35rem; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .exec-header-text p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .exec-carousel-nav { display: flex; align-items: center; gap: 8px; }
+        .exec-nav-arrow {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(37, 211, 102, 0.12); border: 1px solid rgba(37, 211, 102, 0.3);
+            color: var(--primary-light); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s ease; font-size: 0.95rem;
+        }
+        .exec-nav-arrow:hover:not(:disabled) { background: var(--primary); color: #0B1F14; transform: scale(1.08); }
+        .exec-nav-arrow.next-pulse { box-shadow: 0 0 12px rgba(37, 211, 102, 0.4); animation: arrowPulse 1.8s infinite; }
+        @keyframes arrowPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(37, 211, 102, 0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 0 18px rgba(37, 211, 102, 0.7); }
+        }
+        .exec-slide-indicator {
+            font-size: 0.82rem; font-weight: 700; color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.06); padding: 6px 12px; border-radius: 20px;
+            border: 1px solid var(--border); white-space: nowrap;
+        }
+        .exec-carousel-container { width: 100%; max-width: 100%; overflow: hidden; position: relative; box-sizing: border-box; }
+        .exec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%; box-sizing: border-box; }
         .exec-card {
-            background: rgba(14,38,25,0.85);
-            border: 1px solid rgba(37,211,102,0.15);
-            border-radius: var(--radius-md);
-            padding: 18px;
-            transition: all 0.25s ease;
+            background: rgba(14, 38, 25, 0.88); border: 1px solid rgba(37, 211, 102, 0.2);
+            border-radius: 16px; overflow: hidden;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            box-sizing: border-box; display: flex; flex-direction: column;
         }
-        .exec-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        .exec-card:hover { border-color: var(--primary); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+        .exec-card.expanded { border-color: rgba(37, 211, 102, 0.5); box-shadow: 0 10px 32px rgba(37, 211, 102, 0.15); }
+        .exec-card-header { padding: 16px 18px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .exec-card-header:hover { background: rgba(255, 255, 255, 0.02); }
+        .exec-card-top { display: flex; align-items: center; gap: 12px; }
+        .exec-avatar {
+            width: 48px; height: 48px; border-radius: 50%; background: var(--gradient-primary);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; font-weight: 800; color: white; flex-shrink: 0;
+            border: 2px solid rgba(37, 211, 102, 0.3);
         }
-        .exec-stars i {
-            cursor: pointer;
-            font-size: 1.25rem;
-            transition: transform 0.15s ease, color 0.15s ease;
-            padding: 2px;
+        .exec-info { flex: 1; min-width: 0; text-align: left; }
+        .exec-name { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .exec-portfolio { font-size: 0.8rem; color: var(--accent); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .exec-badge-wrap { flex-shrink: 0; }
+        .exec-badge {
+            display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px;
+            font-size: 0.76rem; font-weight: 700; letter-spacing: 0.3px; transition: all 0.2s ease;
         }
-        .exec-stars i:hover { transform: scale(1.25); }
-        .mini-stars i {
-            cursor: pointer;
-            transition: transform 0.15s ease, color 0.15s ease;
+        .exec-badge.unscored { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .exec-badge.scored { background: rgba(37, 211, 102, 0.16); color: #5BF09A; border: 1px solid rgba(37, 211, 102, 0.4); }
+        .exec-toggle-prompt {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 12px;
+            padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.78rem; color: var(--primary-light);
         }
-        .mini-stars i:hover { transform: scale(1.25); }
+        .exec-toggle-prompt .prompt-text { display: flex; align-items: center; gap: 6px; }
+        .exec-toggle-icon { transition: transform 0.25s ease; font-size: 0.85rem; color: var(--text-muted); }
+        .exec-card.expanded .exec-toggle-icon { transform: rotate(180deg); color: var(--primary-light); }
+        .exec-scoring-drawer {
+            padding: 16px 18px 20px; background: rgba(9, 24, 16, 0.95);
+            border-top: 1px solid rgba(37, 211, 102, 0.18); box-sizing: border-box;
+        }
+        .exec-scoring-intro { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px dashed rgba(255, 255, 255, 0.08); text-align: left; }
+        .exec-criterion { margin-bottom: 14px; padding: 10px 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; box-sizing: border-box; }
+        .criterion-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 8px; }
+        .criterion-title-wrap { text-align: left; }
+        .criterion-name { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); display: block; }
+        .criterion-desc { font-size: 0.74rem; color: var(--text-muted); display: block; margin-top: 1px; }
+        .criterion-value-badge { font-size: 0.78rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; background: rgba(37, 211, 102, 0.1); color: #5BF09A; border: 1px solid rgba(37, 211, 102, 0.25); white-space: nowrap; }
+        .criterion-pills { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; width: 100%; box-sizing: border-box; }
+        .score-pill {
+            padding: 8px 0; min-height: 34px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; color: var(--text-secondary);
+            font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.18s ease;
+            display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+        }
+        .score-pill:hover { background: rgba(37, 211, 102, 0.18); border-color: rgba(37, 211, 102, 0.4); color: var(--text-primary); transform: translateY(-1px); }
+        .score-pill.active { background: #25D366 !important; color: #0B1F14 !important; border-color: #5BF09A !important; box-shadow: 0 0 10px rgba(37, 211, 102, 0.45); font-weight: 800; transform: scale(1.05); }
+        .exec-comment-wrap { margin-top: 14px; text-align: left; }
+        .exec-comment-wrap label { display: block; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
+        .exec-comment-input { width: 100%; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text-primary); font-size: 0.82rem; box-sizing: border-box; }
+        .exec-comment-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 8px rgba(37, 211, 102, 0.3); }
+        .exec-drawer-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap; gap: 10px; }
+        .exec-avg-display { font-size: 0.85rem; color: var(--text-secondary); }
+        .exec-avg-display strong { color: #5BF09A; font-size: 1rem; }
+        .exec-drawer-actions { display: flex; gap: 8px; }
+        .exec-swipe-hint {
+            display: none; align-items: center; justify-content: center; gap: 8px; padding: 8px 12px;
+            margin-top: 10px; background: rgba(37, 211, 102, 0.06); border: 1px dashed rgba(37, 211, 102, 0.25);
+            border-radius: 8px; font-size: 0.78rem; color: var(--primary-light);
+        }
+        .pulse-arrow { animation: nudgeRight 1.5s infinite; display: inline-block; }
+        @keyframes nudgeRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(5px); } }
+        .exec-dots { display: none; justify-content: center; align-items: center; gap: 6px; margin-top: 14px; }
+        .exec-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); cursor: pointer; transition: all 0.25s ease; }
+        .exec-dot.active { width: 22px; border-radius: 10px; background: #25D366; box-shadow: 0 0 8px rgba(37, 211, 102, 0.5); }
+        /* My Responses detailed exec breakdown */
+        .my-response-exec-item { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; text-align: left; }
+        .my-response-exec-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .my-response-exec-port { font-size: 0.78rem; color: var(--accent); }
+        .my-response-exec-badge { background: rgba(37, 211, 102, 0.15); color: #5BF09A; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .my-response-criteria-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+        .criterion-chip { background: rgba(0, 0, 0, 0.2); padding: 4px 8px; border-radius: 6px; display: flex; justify-content: space-between; gap: 6px; }
+        .criterion-chip strong { color: var(--text-primary); }
+        .my-response-exec-comment { margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
         .step.active .step-number {
             box-shadow: 0 0 16px var(--primary);
             animation: pulseStep 1.8s infinite;
@@ -208,6 +290,43 @@
             .form-row { grid-template-columns: 1fr !important; gap: 14px !important; width: 100% !important; }
             .issue-form input, .issue-form select, .issue-form textarea { width: 100% !important; box-sizing: border-box !important; }
 
+            /* Executive Carousel on Mobile: Strictly 1 tile at a time with NO page horizontal scroll */
+            .exec-carousel-nav { display: flex !important; }
+            .exec-dots { display: flex !important; }
+            .exec-swipe-hint { display: flex !important; }
+            .exec-carousel-container {
+                overflow: hidden !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                position: relative !important;
+                touch-action: pan-y pinch-zoom;
+            }
+            .exec-grid {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: nowrap !important;
+                width: 100% !important;
+                transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+                align-items: flex-start !important;
+                gap: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .exec-card {
+                flex: 0 0 100% !important;
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                border-radius: 14px !important;
+            }
+            .exec-card-header { padding: 14px 12px !important; }
+            .exec-scoring-drawer { padding: 14px 12px 16px !important; }
+            .exec-criterion { padding: 8px 10px !important; margin-bottom: 10px !important; }
+            .score-pill { padding: 6px 0 !important; min-height: 32px !important; font-size: 0.76rem !important; }
+
             .submit-summary { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
             .anon-toggle-row { padding: 12px 14px !important; }
             .my-response { padding: 16px 12px !important; }
@@ -215,6 +334,7 @@
             .page-nav { padding: 16px 0 32px !important; }
         }
         @media (max-width: 480px) {
+            .criterion-pills { grid-template-columns: repeat(5, 1fr) !important; gap: 4px !important; }
             .submit-summary { grid-template-columns: 1fr !important; }
             .anon-toggle-row { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
             .toggle-switch { align-self: flex-start; }
@@ -316,9 +436,25 @@
                     </div>
                 </div>
                 <div class="exec-section animate-on-scroll">
-                    <h3><i class="fas fa-users"></i> Rate Individual Executives</h3>
-                    <p>Optional — rate each SRC executive individually</p>
-                    <div class="exec-grid" id="execGrid"></div>
+                    <div class="exec-section-header">
+                        <div class="exec-header-text">
+                            <h3><i class="fas fa-users"></i> Rate Individual Executives</h3>
+                            <p>Optional — tap an executive to evaluate on Communication, Demeanor, Dressing, Openness &amp; Delivery (1–10)</p>
+                        </div>
+                        <div class="exec-carousel-nav" id="execCarouselNav" style="display:none;">
+                            <button type="button" class="exec-nav-arrow" id="execPrevBtn" aria-label="Previous Executive" onclick="slideExec(-1)">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="exec-slide-indicator" id="execSlideIndicator">1 of 1</span>
+                            <button type="button" class="exec-nav-arrow next-pulse" id="execNextBtn" aria-label="Next Executive" onclick="slideExec(1)">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="exec-carousel-container" id="execCarouselContainer">
+                        <div class="exec-grid" id="execGrid"></div>
+                    </div>
+                    <div class="exec-dots" id="execDots" style="display:none;"></div>
                 </div>
                 <div class="page-nav"><button type="button" class="btn-primary" onclick="goToStep(2)">Next <i class="fas fa-arrow-right"></i></button></div>
             </div>
@@ -499,11 +635,37 @@
             const execs = DataStore.getExecutives();
             let execHtml = '';
             if (ev.executiveRatings && Object.keys(ev.executiveRatings).length > 0) {
-                execHtml = Object.entries(ev.executiveRatings).map(([eid, r]) => {
+                const execItems = Object.entries(ev.executiveRatings).map(([eid, r]) => {
                     const exec = execs.find(x => x.id === eid);
-                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><span>${exec ? exec.name : eid}</span><span class="response-stars">${'★'.repeat(r)}${'☆'.repeat(5-r)}</span></div>`;
+                    const name = exec ? exec.name : eid;
+                    const portfolio = exec ? exec.portfolio : '';
+                    if (typeof r === 'object' && r !== null) {
+                        const scoreVal = r.score || '—';
+                        return `
+                            <div class="my-response-exec-item">
+                                <div class="my-response-exec-head">
+                                    <div>
+                                        <strong style="color:var(--text-primary);font-size:0.95rem;">${name}</strong>
+                                        ${portfolio ? `<div class="my-response-exec-port">${portfolio}</div>` : ''}
+                                    </div>
+                                    <div class="my-response-exec-badge">Score: <strong>${scoreVal}</strong>/10</div>
+                                </div>
+                                <div class="my-response-criteria-grid">
+                                    <div class="criterion-chip"><span>Communication:</span> <strong>${r.communication ? r.communication + '/10' : '—'}</strong></div>
+                                    <div class="criterion-chip"><span>Temperance:</span> <strong>${r.temperance ? r.temperance + '/10' : '—'}</strong></div>
+                                    <div class="criterion-chip"><span>Dressing:</span> <strong>${r.dressing ? r.dressing + '/10' : '—'}</strong></div>
+                                    <div class="criterion-chip"><span>Openness:</span> <strong>${r.openness ? r.openness + '/10' : '—'}</strong></div>
+                                    <div class="criterion-chip"><span>Delivery:</span> <strong>${r.delivery ? r.delivery + '/10' : '—'}</strong></div>
+                                    <div class="criterion-chip"><span>Integrity:</span> <strong>${r.integrity ? r.integrity + '/10' : '—'}</strong></div>
+                                </div>
+                                ${r.comment ? `<div class="my-response-exec-comment"><i class="fas fa-quote-left"></i> "${r.comment}"</div>` : ''}
+                            </div>
+                        `;
+                    } else {
+                        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><span>${name}</span><span class="response-stars">${'★'.repeat(r)}${'☆'.repeat(5-r)} (${r}/5)</span></div>`;
+                    }
                 }).join('');
-                execHtml = `<div class="response-card"><h3><i class="fas fa-users" style="color:var(--accent);"></i> Executive Ratings</h3>${execHtml}</div>`;
+                execHtml = `<div class="response-card"><h3><i class="fas fa-users" style="color:var(--accent);"></i> Executive Performance Evaluations</h3>${execItems}</div>`;
             }
 
             let starsHtml = '';
@@ -624,9 +786,8 @@
                 if (ev.executiveRatings) {
                     Object.entries(ev.executiveRatings).forEach(([eid, val]) => {
                         execRatings[eid] = val;
-                        const group = document.querySelector(`.exec-stars[data-exec="${eid}"]`);
-                        if (group) group.querySelectorAll('i').forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= val));
                     });
+                    loadExecutives();
                 }
 
                 // Issue
@@ -745,24 +906,340 @@
             });
         });
 
-        // Executive ratings
+        // Executive ratings with 1-10 criteria scoring & mobile carousel
         const execRatings = {};
-        function loadExecutives() {
-            const execs = DataStore.getExecutives(); const grid = document.getElementById('execGrid');
-            if (execs.length === 0) { grid.innerHTML = '<div class="exec-empty"><i class="fas fa-users"></i><p>No executives have been added yet.</p></div>'; return; }
-            grid.innerHTML = execs.map(exec => {
-                const initials = exec.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-                return `<div class="exec-card"><div class="exec-avatar">${initials}</div><div class="exec-name">${exec.name}</div><div class="exec-portfolio">${exec.portfolio}</div><div class="exec-stars" data-exec="${exec.id}">${[1,2,3,4,5].map(v => `<i class="fas fa-star" data-value="${v}"></i>`).join('')}</div></div>`;
-            }).join('');
-            grid.querySelectorAll('.exec-stars').forEach(group => {
-                const stars = group.querySelectorAll('i'); let cur = 0;
-                stars.forEach(star => {
-                    star.addEventListener('mouseenter', () => { const v = parseInt(star.dataset.value); stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= v)); });
-                    star.addEventListener('mouseleave', () => { stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
-                    star.addEventListener('click', () => { cur = parseInt(star.dataset.value); execRatings[group.dataset.exec] = cur; stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
-                });
-            });
+        let currentExecIndex = 0;
+
+        const EXEC_CRITERIA = [
+            { key: 'communication', label: 'Communication', desc: 'Clarity, speech delivery, briefings & transparency' },
+            { key: 'temperance', label: 'Temperance / Demeanor', desc: 'Emotional maturity, patience & composure under pressure' },
+            { key: 'dressing', label: 'Dressing & Grooming', desc: 'Decorum, professional appearance & dignity' },
+            { key: 'openness', label: 'Openness & Accessibility', desc: 'Approachability, listening & responsive to students' },
+            { key: 'delivery', label: 'Delivery & Execution', desc: 'Fulfillment of portfolio duties & manifesto promises' },
+            { key: 'integrity', label: 'Integrity & Accountability', desc: 'Ethical leadership, fairness & responsible stewardship' }
+        ];
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        function loadExecutives() {
+            const execs = DataStore.getExecutives();
+            const grid = document.getElementById('execGrid');
+            const navWrap = document.getElementById('execCarouselNav');
+            const dotsWrap = document.getElementById('execDots');
+
+            if (!grid) return;
+
+            if (execs.length === 0) {
+                grid.innerHTML = '<div class="exec-empty" style="grid-column: 1 / -1; width: 100%;"><i class="fas fa-users"></i><p>No executives have been added yet.</p></div>';
+                if (navWrap) navWrap.style.display = 'none';
+                if (dotsWrap) dotsWrap.style.display = 'none';
+                return;
+            }
+
+            // Render Dots
+            if (dotsWrap) {
+                dotsWrap.innerHTML = execs.map((_, i) => `<div class="exec-dot ${i === currentExecIndex ? 'active' : ''}" onclick="goToExecSlide(${i})"></div>`).join('');
+            }
+
+            grid.innerHTML = execs.map((exec, idx) => {
+                const initials = exec.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                const curRating = execRatings[exec.id];
+                const isObj = typeof curRating === 'object' && curRating !== null;
+                const scoreVal = isObj ? curRating.score : (typeof curRating === 'number' ? curRating * 2 : 0);
+                const hasScore = scoreVal > 0;
+                const commentVal = isObj && curRating.comment ? escapeHtml(curRating.comment) : '';
+
+                // Calculate filled count
+                const filledCount = isObj ? EXEC_CRITERIA.filter(c => (curRating[c.key] || 0) > 0).length : (hasScore ? 6 : 0);
+
+                const badgeHtml = hasScore 
+                    ? `<span class="exec-badge scored" id="exec-badge-${exec.id}"><i class="fas fa-check-circle"></i> <strong>${scoreVal}</strong>/10</span>`
+                    : `<span class="exec-badge unscored" id="exec-badge-${exec.id}"><i class="fas fa-pen"></i> Tap to score</span>`;
+
+                const toggleTextHtml = hasScore
+                    ? `<i class="fas fa-check"></i> Scored: <strong>${scoreVal}</strong>/10 (${filledCount}/6 criteria)`
+                    : `<i class="fas fa-sliders-h"></i> Tap to score criteria (1–10)`;
+
+                // Criteria HTML
+                const criteriaHtml = EXEC_CRITERIA.map(crit => {
+                    const savedVal = isObj && curRating[crit.key] ? parseInt(curRating[crit.key]) : 0;
+                    const badgeText = savedVal > 0 ? `${savedVal}/10` : 'Not set';
+                    const pillsHtml = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => `
+                        <button type="button" 
+                            class="score-pill ${savedVal === val ? 'active' : ''}" 
+                            data-val="${val}" 
+                            onclick="setExecCriterionScore('${exec.id}', '${crit.key}', ${val}, event)">
+                            ${val}
+                        </button>
+                    `).join('');
+
+                    return `
+                        <div class="exec-criterion" data-criterion="${crit.key}">
+                            <div class="criterion-header">
+                                <div class="criterion-title-wrap">
+                                    <span class="criterion-name">${crit.label}</span>
+                                    <span class="criterion-desc">${crit.desc}</span>
+                                </div>
+                                <span class="criterion-value-badge" id="badge-${exec.id}-${crit.key}">${badgeText}</span>
+                            </div>
+                            <div class="criterion-pills" role="radiogroup" aria-label="${crit.label}">
+                                ${pillsHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                const isLastExec = idx === execs.length - 1;
+                const nextActionBtn = !isLastExec 
+                    ? `<button type="button" class="btn-sm btn-primary" onclick="nextExecOnMobile('${exec.id}')">Next Executive <i class="fas fa-arrow-right"></i></button>`
+                    : `<button type="button" class="btn-sm btn-primary" onclick="toggleExecScoring('${exec.id}')"><i class="fas fa-check"></i> Finished</button>`;
+
+                return `
+                    <div class="exec-card" id="exec-card-${exec.id}" data-exec-id="${exec.id}">
+                        <div class="exec-card-header" onclick="toggleExecScoring('${exec.id}')" role="button" tabindex="0" aria-label="Evaluate ${escapeHtml(exec.name)}">
+                            <div class="exec-card-top">
+                                <div class="exec-avatar">${initials}</div>
+                                <div class="exec-info">
+                                    <div class="exec-name">${escapeHtml(exec.name)}</div>
+                                    <div class="exec-portfolio">${escapeHtml(exec.portfolio)}</div>
+                                </div>
+                                <div class="exec-badge-wrap">
+                                    ${badgeHtml}
+                                </div>
+                            </div>
+                            <div class="exec-toggle-prompt">
+                                <span class="prompt-text" id="exec-toggle-text-${exec.id}">${toggleTextHtml}</span>
+                                <i class="fas fa-chevron-down exec-toggle-icon" id="exec-icon-${exec.id}"></i>
+                            </div>
+                            <!-- Mobile swipe indicator banner with arrow pointing right -->
+                            <div class="exec-swipe-hint">
+                                <span>Swipe tile or tap right arrow for next executive</span>
+                                <i class="fas fa-arrow-right pulse-arrow"></i>
+                            </div>
+                        </div>
+
+                        <!-- Expandable Scoring Form Drawer -->
+                        <div class="exec-scoring-drawer" id="exec-drawer-${exec.id}" style="display:none;">
+                            <div class="exec-scoring-intro">
+                                Tap a score from <strong>1</strong> (lowest) to <strong>10</strong> (highest) for each domain:
+                            </div>
+                            ${criteriaHtml}
+                            <div class="exec-comment-wrap">
+                                <label><i class="fas fa-comment-alt"></i> Remarks / Constructive Feedback (Optional)</label>
+                                <input type="text" 
+                                    class="exec-comment-input" 
+                                    id="exec-comment-${exec.id}" 
+                                    placeholder="e.g. Articulate speaker, approachable, delivered on student lounge..." 
+                                    value="${commentVal}"
+                                    oninput="updateExecComment('${exec.id}', this.value)" 
+                                    onclick="event.stopPropagation()">
+                            </div>
+                            <div class="exec-drawer-footer">
+                                <div class="exec-avg-display">
+                                    Executive Score: <strong id="exec-avg-${exec.id}">${hasScore ? scoreVal : '—'}</strong> / 10
+                                </div>
+                                <div class="exec-drawer-actions">
+                                    <button type="button" class="btn-sm btn-outline" onclick="toggleExecScoring('${exec.id}')">Done</button>
+                                    ${nextActionBtn}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateExecCarouselUI();
+            goToExecSlide(currentExecIndex);
+        }
+
+        window.toggleExecScoring = function(execId) {
+            const drawer = document.getElementById(`exec-drawer-${execId}`);
+            const icon = document.getElementById(`exec-icon-${execId}`);
+            const card = document.getElementById(`exec-card-${execId}`);
+            if (!drawer) return;
+            const isOpen = drawer.style.display !== 'none';
+            if (isOpen) {
+                drawer.style.display = 'none';
+                if (icon) icon.style.transform = 'rotate(0deg)';
+                if (card) card.classList.remove('expanded');
+            } else {
+                drawer.style.display = 'block';
+                if (icon) icon.style.transform = 'rotate(180deg)';
+                if (card) card.classList.add('expanded');
+            }
+        };
+
+        window.setExecCriterionScore = function(execId, criterionKey, val, event) {
+            if (event) event.stopPropagation();
+            if (!execRatings[execId] || typeof execRatings[execId] !== 'object') {
+                execRatings[execId] = {
+                    communication: 0,
+                    temperance: 0,
+                    dressing: 0,
+                    openness: 0,
+                    delivery: 0,
+                    integrity: 0,
+                    score: 0,
+                    comment: ''
+                };
+            }
+            execRatings[execId][criterionKey] = val;
+
+            // Highlight pill
+            const drawer = document.getElementById(`exec-drawer-${execId}`);
+            if (drawer) {
+                const critRow = drawer.querySelector(`.exec-criterion[data-criterion="${criterionKey}"]`);
+                if (critRow) {
+                    critRow.querySelectorAll('.score-pill').forEach(btn => {
+                        btn.classList.toggle('active', parseInt(btn.dataset.val) === val);
+                    });
+                    const badge = document.getElementById(`badge-${execId}-${criterionKey}`);
+                    if (badge) badge.textContent = `${val}/10`;
+                }
+            }
+
+            recalculateExecScore(execId);
+        };
+
+        function recalculateExecScore(execId) {
+            const obj = execRatings[execId];
+            if (!obj || typeof obj !== 'object') return;
+            const keys = EXEC_CRITERIA.map(c => c.key);
+            const filled = keys.filter(k => (obj[k] || 0) > 0);
+            if (filled.length > 0) {
+                const sum = filled.reduce((acc, k) => acc + (obj[k] || 0), 0);
+                const avg = Math.round((sum / filled.length) * 10) / 10;
+                obj.score = avg;
+
+                const badgeEl = document.getElementById(`exec-badge-${execId}`);
+                if (badgeEl) {
+                    badgeEl.className = 'exec-badge scored';
+                    badgeEl.innerHTML = `<i class="fas fa-check-circle"></i> <strong>${avg}</strong>/10`;
+                }
+                const promptEl = document.getElementById(`exec-toggle-text-${execId}`);
+                if (promptEl) {
+                    promptEl.innerHTML = `<i class="fas fa-check"></i> Scored: <strong>${avg}</strong>/10 (${filled.length}/6 criteria)`;
+                }
+                const avgEl = document.getElementById(`exec-avg-${execId}`);
+                if (avgEl) avgEl.textContent = avg;
+            }
+        }
+
+        window.updateExecComment = function(execId, val) {
+            if (!execRatings[execId] || typeof execRatings[execId] !== 'object') {
+                execRatings[execId] = { communication: 0, temperance: 0, dressing: 0, openness: 0, delivery: 0, integrity: 0, score: 0, comment: '' };
+            }
+            execRatings[execId].comment = val.trim();
+        };
+
+        window.slideExec = function(dir) {
+            const execs = DataStore.getExecutives();
+            if (!execs || execs.length <= 1) return;
+            let nextIdx = currentExecIndex + dir;
+            if (nextIdx < 0) nextIdx = 0;
+            if (nextIdx >= execs.length) nextIdx = execs.length - 1;
+            goToExecSlide(nextIdx);
+        };
+
+        window.goToExecSlide = function(idx) {
+            const execs = DataStore.getExecutives();
+            if (!execs || execs.length === 0) return;
+            currentExecIndex = Math.max(0, Math.min(execs.length - 1, idx));
+            const grid = document.getElementById('execGrid');
+            if (grid && window.innerWidth <= 768) {
+                grid.style.transform = `translateX(-${currentExecIndex * 100}%)`;
+            } else if (grid) {
+                grid.style.transform = 'none';
+            }
+            updateExecCarouselUI();
+        };
+
+        function updateExecCarouselUI() {
+            const execs = DataStore.getExecutives();
+            const indicator = document.getElementById('execSlideIndicator');
+            const prevBtn = document.getElementById('execPrevBtn');
+            const nextBtn = document.getElementById('execNextBtn');
+            const navWrap = document.getElementById('execCarouselNav');
+            const dotsWrap = document.getElementById('execDots');
+
+            if (execs.length > 1 && window.innerWidth <= 768) {
+                if (navWrap) navWrap.style.display = 'flex';
+                if (dotsWrap) dotsWrap.style.display = 'flex';
+            } else {
+                if (navWrap) navWrap.style.display = 'none';
+                if (dotsWrap) dotsWrap.style.display = 'none';
+            }
+
+            if (indicator) indicator.textContent = `${currentExecIndex + 1} of ${execs.length || 1}`;
+            if (prevBtn) {
+                prevBtn.disabled = currentExecIndex === 0;
+                prevBtn.style.opacity = currentExecIndex === 0 ? '0.35' : '1';
+                prevBtn.style.cursor = currentExecIndex === 0 ? 'not-allowed' : 'pointer';
+            }
+            if (nextBtn) {
+                const isLast = currentExecIndex >= execs.length - 1;
+                nextBtn.disabled = isLast;
+                nextBtn.style.opacity = isLast ? '0.35' : '1';
+                nextBtn.style.cursor = isLast ? 'not-allowed' : 'pointer';
+                if (!isLast) nextBtn.classList.add('next-pulse');
+                else nextBtn.classList.remove('next-pulse');
+            }
+            if (dotsWrap) {
+                dotsWrap.querySelectorAll('.exec-dot').forEach((dot, i) => {
+                    dot.classList.toggle('active', i === currentExecIndex);
+                });
+            }
+        }
+
+        window.nextExecOnMobile = function(execId) {
+            toggleExecScoring(execId);
+            const execs = DataStore.getExecutives();
+            if (currentExecIndex < execs.length - 1) {
+                slideExec(1);
+            }
+        };
+
+        // Swipe gesture detection on carousel container (strictly zero horizontal page scrolling)
+        const execCarouselContainer = document.getElementById('execCarouselContainer');
+        if (execCarouselContainer) {
+            let touchStartX = 0, touchStartY = 0;
+            let touchEndX = 0, touchEndY = 0;
+
+            execCarouselContainer.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].clientX;
+                touchStartY = e.changedTouches[0].clientY;
+            }, { passive: true });
+
+            execCarouselContainer.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].clientX;
+                touchEndY = e.changedTouches[0].clientY;
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+                if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.3) {
+                    if (diffX < 0) {
+                        slideExec(1); // Swiped left -> advance to next
+                    } else {
+                        slideExec(-1); // Swiped right -> go to previous
+                    }
+                }
+            }, { passive: true });
+        }
+
+        window.addEventListener('resize', () => {
+            const grid = document.getElementById('execGrid');
+            if (grid) {
+                if (window.innerWidth <= 768) {
+                    grid.style.transform = `translateX(-${currentExecIndex * 100}%)`;
+                } else {
+                    grid.style.transform = 'none';
+                }
+            }
+            updateExecCarouselUI();
+        });
+
         loadExecutives();
 
         // Tags

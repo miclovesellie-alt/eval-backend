@@ -1316,11 +1316,34 @@
         let execHtml = '';
         if (e.executiveRatings && Object.keys(e.executiveRatings).length > 0) {
             const execs = DataStore.getExecutives();
-            execHtml = '<h4 style="margin-top:16px;color:var(--accent);">Executive Ratings</h4>';
-            for (const [eid, rating] of Object.entries(e.executiveRatings)) {
+            execHtml = '<h4 style="margin-top:16px;color:var(--accent);"><i class="fas fa-users" style="margin-right:6px;"></i> Executive Performance Evaluations</h4><div style="display:grid;gap:8px;">';
+            for (const [eid, r] of Object.entries(e.executiveRatings)) {
                 const exec = execs.find(x => x.id === eid);
-                execHtml += `<p><strong>${exec ? exec.name : eid}:</strong> ${'&#9733;'.repeat(rating)}${'&#9734;'.repeat(5-rating)}</p>`;
+                const name = exec ? exec.name : eid;
+                const portfolio = exec ? ` (${exec.portfolio})` : '';
+                if (typeof r === 'object' && r !== null) {
+                    execHtml += `
+                        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                                <strong style="color:var(--text-primary);font-size:0.95rem;">${escapeHtml(name)}${escapeHtml(portfolio)}</strong>
+                                <span style="background:rgba(37,211,102,0.15);color:var(--primary-light);padding:3px 10px;border-radius:20px;font-weight:700;font-size:0.82rem;">Score: ${r.score || '—'}/10</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:6px;font-size:0.8rem;color:var(--text-secondary);">
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Communication: <strong style="color:var(--text-primary);">${r.communication ? r.communication + '/10' : '—'}</strong></div>
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Temperance: <strong style="color:var(--text-primary);">${r.temperance ? r.temperance + '/10' : '—'}</strong></div>
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Dressing: <strong style="color:var(--text-primary);">${r.dressing ? r.dressing + '/10' : '—'}</strong></div>
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Openness: <strong style="color:var(--text-primary);">${r.openness ? r.openness + '/10' : '—'}</strong></div>
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Delivery: <strong style="color:var(--text-primary);">${r.delivery ? r.delivery + '/10' : '—'}</strong></div>
+                                <div style="background:rgba(0,0,0,0.25);padding:4px 8px;border-radius:4px;">Integrity: <strong style="color:var(--text-primary);">${r.integrity ? r.integrity + '/10' : '—'}</strong></div>
+                            </div>
+                            ${r.comment ? `<div style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);font-style:italic;"><i class="fas fa-quote-left" style="font-size:0.75rem;margin-right:4px;"></i>"${escapeHtml(r.comment)}"</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    execHtml += `<p style="margin:4px 0;"><strong>${escapeHtml(name)}${escapeHtml(portfolio)}:</strong> ${'&#9733;'.repeat(r)}${'&#9734;'.repeat(5-r)} (${r}/5)</p>`;
+                }
             }
+            execHtml += '</div>';
         }
         let starsHtml = '';
         if (e.starRatings && Object.keys(e.starRatings).length > 0) {
