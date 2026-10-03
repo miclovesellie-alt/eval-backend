@@ -169,12 +169,16 @@
         });
 
         // Login
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origHtml = submitBtn.innerHTML;
             const indexNumber = document.getElementById('indexNumber').value.trim();
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('errorMsg');
             const errorText = document.getElementById('errorText');
+
+            errorMsg.classList.remove('show');
 
             if (!indexNumber || !password) {
                 errorText.textContent = 'Please fill in all fields.';
@@ -182,12 +186,29 @@
                 return;
             }
 
-            const user = DataStore.loginUser(indexNumber, password);
-            if (user) {
-                window.location.href = 'evaluate.html';
-            } else {
-                errorText.textContent = 'Invalid index number or password. Please try again.';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+
+            try {
+                const res = await DataStore.loginUser(indexNumber, password);
+                if (res.success) {
+                    if (res.role === 'admin') {
+                        // Admin entered email on student page -> smart redirect to admin panel
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'evaluate.html';
+                    }
+                } else {
+                    errorText.textContent = res.message || 'Invalid index number or password. Please try again.';
+                    errorMsg.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
+            } catch (err) {
+                errorText.textContent = 'Connection error. Please try again.';
                 errorMsg.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origHtml;
             }
         });
 

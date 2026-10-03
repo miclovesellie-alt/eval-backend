@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -61,8 +61,10 @@
     <script src="data.js"></script>
     <script>
         // Register
-        document.getElementById('registerForm').addEventListener('submit', (e) => {
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origHtml = submitBtn ? submitBtn.innerHTML : '';
             const name = document.getElementById('fullName').value.trim();
             const indexNumber = document.getElementById('indexNumber').value.trim();
             const password = document.getElementById('password').value;
@@ -91,14 +93,32 @@
                 return;
             }
 
-            const result = DataStore.addUser({ name, indexNumber, password });
-            if (result.success) {
-                successText.textContent = 'Account created! Redirecting to login...';
-                successMsg.classList.add('show');
-                setTimeout(() => { window.location.href = 'index.html'; }, 1500);
-            } else {
-                errorText.textContent = result.message;
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+            }
+
+            try {
+                const result = await DataStore.addUser({ name, indexNumber, password });
+                if (result.success) {
+                    successText.textContent = 'Account created! Redirecting to login...';
+                    successMsg.classList.add('show');
+                    setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+                } else {
+                    errorText.textContent = result.message || 'Registration failed.';
+                    errorMsg.classList.add('show');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = origHtml;
+                    }
+                }
+            } catch (err) {
+                errorText.textContent = 'Network error. Please try again.';
                 errorMsg.classList.add('show');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = origHtml;
+                }
             }
         });
     </script>

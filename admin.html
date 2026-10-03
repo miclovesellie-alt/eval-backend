@@ -397,13 +397,39 @@
     let currentAdmin = DataStore.getCurrentAdmin();
     if (currentAdmin) showPanel();
 
-    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origHtml = submitBtn ? submitBtn.innerHTML : '';
         const u = document.getElementById('adminUsername').value.trim();
         const p = document.getElementById('adminPassword').value;
-        const admin = DataStore.loginAdmin(u, p);
-        if (admin) { currentAdmin = admin; showPanel(); }
-        else { document.getElementById('loginErrorText').textContent = 'Invalid credentials.'; document.getElementById('loginError').classList.add('show'); }
+        const errEl = document.getElementById('loginError');
+        const errTxt = document.getElementById('loginErrorText');
+        errEl.classList.remove('show');
+
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+        }
+
+        try {
+            const res = await DataStore.loginAdmin(u, p);
+            if (res && res.success && res.admin) {
+                currentAdmin = res.admin;
+                showPanel();
+            } else {
+                errTxt.textContent = (res && res.message) ? res.message : 'Invalid admin credentials.';
+                errEl.classList.add('show');
+            }
+        } catch (err) {
+            errTxt.textContent = 'Connection error. Please try again.';
+            errEl.classList.add('show');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origHtml;
+            }
+        }
     });
 
     function showPanel() {

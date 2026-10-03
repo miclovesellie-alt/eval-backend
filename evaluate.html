@@ -355,7 +355,7 @@
 
     <script src="data.js"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         // Auth guard
         const user = DataStore.getCurrentUser();
         if (!user) { window.location.href = 'index.html'; return; }
@@ -363,7 +363,10 @@
         document.getElementById('userGreeting').textContent = 'Hi, ' + user.name;
 
         let isEditMode = false;
-        const existingEval = DataStore.getUserEvaluation(user.indexNumber);
+        let existingEval = DataStore.getUserEvaluation(user.indexNumber);
+        if (!existingEval) {
+            existingEval = await DataStore.fetchUserEvaluation(user.indexNumber);
+        }
         const evalOpen = DataStore.isEvaluationOpen();
 
         // Decide which view to show

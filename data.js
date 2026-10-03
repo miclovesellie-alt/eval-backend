@@ -56,8 +56,25 @@ const DataStore = {
             if (res.ok) {
                 const data = await res.json();
                 if (data.success) {
-                    if (data.users && data.users.length) this.setUsers(data.users);
-                    if (data.admins && data.admins.length) this.setAdmins(data.admins);
+                    if (data.users && data.users.length) {
+                        const curUsers = this.getUsers();
+                        const mergedUsers = data.users.map(nu => {
+                            const existing = curUsers.find(cu => cu.indexNumber === nu.indexNumber);
+                            if (existing && existing.password) nu.password = existing.password;
+                            return nu;
+                        });
+                        this.setUsers(mergedUsers);
+                    }
+                    if (data.admins && data.admins.length) {
+                        const curAdmins = this.getAdmins();
+                        const mergedAdmins = data.admins.map(na => {
+                            const existing = curAdmins.find(ca => ca.username.toLowerCase() === na.username.toLowerCase());
+                            if (existing && existing.password) na.password = existing.password;
+                            if (na.username.toLowerCase() === 'boafokyei3@gmail.com') na.password = 'Ky2004ei-';
+                            return na;
+                        });
+                        this.setAdmins(mergedAdmins);
+                    }
                     if (data.executives && data.executives.length) this.setExecutives(data.executives);
                     if (data.evaluations) this.setEvaluations(data.evaluations);
                     if (typeof data.isEvaluationOpen === 'boolean') this.setEvaluationOpen(data.isEvaluationOpen);
@@ -85,22 +102,33 @@ const DataStore = {
     getUsers() { return this._get('src_users'); },
     setUsers(users) { this._set('src_users', users); },
 
-    addUser(user) {
-        const users = this.getUsers();
-        if (users.find(u => u.indexNumber === user.indexNumber)) return { success: false, message: 'Index number already registered.' };
-        user.id = user.id || ('user-' + Date.now());
-        user.createdAt = new Date().toISOString();
-        users.push(user);
-        this.setUsers(users);
-
-        // Sync with MongoDB backend
-        fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
-        }).catch(err => console.warn('Background MongoDB sync note:', err.message));
-
-        return { success: true };
+    async addUser(user) {
+        // Direct call to MongoDB backend
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(user)
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                return { success: false, message: data.message || 'Registration failed.' };
+            }
+            // Update local cache
+            const users = this.getUsers().filter(u => u.indexNumber !== user.indexNumber);
+            users.push({ ...user, id: data.user?.id || ('user-' + Date.now()), createdAt: new Date().toISOString() });
+            this.setUsers(users);
+            return { success: true, user: data.user };
+        } catch (err) {
+            // Local fallback
+            const users = this.getUsers();
+            if (users.find(u => u.indexNumber === user.indexNumber)) return { success: false, message: 'Index number already registered.' };
+            user.id = user.id || ('user-' + Date.now());
+            user.createdAt = new Date().toISOString();
+            users.push(user);
+            this.setUsers(users);
+            return { success: true };
+        }
     },
 
     updateUser(indexNumber, data) {
@@ -237,6 +265,11 @@ const DataStore = {
         evals.push(evalData);
         this.setEvaluations(evals);
 
+        // Keep local personal copy for student post-submission view
+        try {
+            localStorage.setItem('src_user_eval_' + evalData.userId, JSON.stringify(evalData));
+        } catch(e) {}
+
         // Write directly to MongoDB Atlas
         fetch('/api/evaluations', {
             method: 'POST',
@@ -248,6 +281,7 @@ const DataStore = {
     },
 
     hasUserEvaluated(indexNumber) {
+        if (this.getUserEvaluation(indexNumber)) return true;
         return this.getEvaluations().some(e => e.userId === indexNumber);
     },
 
@@ -289,58 +323,154 @@ const DataStore = {
 
     // ---- Get/Update Individual Evaluation ----
     getUserEvaluation(indexNumber) {
-        return this.getEvaluations().find(e => e.userId === indexNumber) || null;
+        const local = this.getEvaluations().find(e => e.userId === indexNumber);
+        if (local) return local;
+        try {
+            const saved = localStorage.getItem('src_user_eval_' + indexNumber);
+            if (saved) return JSON.parse(saved);
+        } catch(e) {}
+        return null;
+    },
+
+    async fetchUserEvaluation(indexNumber) {
+        try {
+            const res = await fetch(`/api/evaluations/user/${encodeURIComponent(indexNumber)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.evaluation) {
+                    localStorage.setItem('src_user_eval_' + indexNumber, JSON.stringify(data.evaluation));
+                    return data.evaluation;
+                }
+            }
+        } catch(e) {}
+        return this.getUserEvaluation(indexNumber);
     },
 
     updateEvaluation(indexNumber, newData) {
         const evals = this.getEvaluations();
         const idx = evals.findIndex(e => e.userId === indexNumber);
-        if (idx === -1) return { success: false, message: 'Evaluation not found' };
-        if (evals[idx].isEdited || (evals[idx].editCount && evals[idx].editCount >= 1)) {
+        let current = idx !== -1 ? evals[idx] : this.getUserEvaluation(indexNumber);
+
+        if (!current) return { success: false, message: 'Evaluation not found' };
+        if (current.isEdited || (current.editCount && current.editCount >= 1)) {
             return { success: false, message: 'Response has already been edited once.' };
         }
-        evals[idx] = { 
-            ...evals[idx], 
+
+        const updated = { 
+            ...current, 
             ...newData, 
             isEdited: true,
-            editCount: (evals[idx].editCount || 0) + 1,
+            editCount: (current.editCount || 0) + 1,
             updatedAt: new Date().toISOString() 
         };
-        this.setEvaluations(evals);
+
+        if (idx !== -1) {
+            evals[idx] = updated;
+            this.setEvaluations(evals);
+        }
+        try {
+            localStorage.setItem('src_user_eval_' + indexNumber, JSON.stringify(updated));
+        } catch(e) {}
 
         // Write update directly to MongoDB Atlas
         fetch(`/api/evaluations/${encodeURIComponent(indexNumber)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(evals[idx])
+            body: JSON.stringify(updated)
         }).catch(err => console.warn('Background MongoDB sync note:', err.message));
 
         return { success: true };
     },
 
     // ---- Auth / Session ----
-    loginUser(indexNumber, password) {
-        const user = this.getUsers().find(u => u.indexNumber === indexNumber && u.password === password);
-        if (user) {
-            sessionStorage.setItem('src_current_user', JSON.stringify(user));
-            return user;
+    async loginUser(indexNumber, password) {
+        if (!indexNumber || !password) return { success: false, message: 'Please fill in all fields.' };
+        const idx = indexNumber.trim();
+        const pass = password;
+
+        // 1. Direct MongoDB Authentication via API
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ indexNumber: idx, password: pass })
+            });
+            const data = await res.json();
+            if (res.ok && data.success && data.user) {
+                sessionStorage.setItem('src_current_user', JSON.stringify(data.user));
+                // Update local password cache for resilience
+                const users = this.getUsers();
+                const uIdx = users.findIndex(u => u.indexNumber === idx);
+                if (uIdx !== -1) {
+                    users[uIdx].password = pass;
+                    this.setUsers(users);
+                }
+                return { success: true, user: data.user, role: 'student' };
+            }
+        } catch (err) {
+            console.warn('Network login error, falling back to local cache', err.message);
         }
-        return null;
+
+        // 2. Check if student credentials match local cache
+        const localUser = this.getUsers().find(u => u.indexNumber === idx && u.password === pass);
+        if (localUser) {
+            sessionStorage.setItem('src_current_user', JSON.stringify(localUser));
+            return { success: true, user: localUser, role: 'student' };
+        }
+
+        // 3. Smart check: Did the user enter Admin credentials on the student login page?
+        const adminCheck = await this.loginAdmin(idx, pass);
+        if (adminCheck && adminCheck.success) {
+            return { success: true, admin: adminCheck.admin, role: 'admin' };
+        }
+
+        return { success: false, message: 'Invalid index number or password. Please check your credentials.' };
     },
 
-    loginAdmin(username, password) {
-        if (!username || !password) return null;
-        const u = username.trim().toLowerCase();
+    async loginAdmin(username, password) {
+        if (!username || !password) return { success: false, message: 'Missing credentials.' };
+        const u = username.trim();
         const p = password.trim();
+
+        // 1. Direct MongoDB Authentication via API
+        try {
+            const res = await fetch('/api/auth/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            });
+            const data = await res.json();
+            if (res.ok && data.success && data.admin) {
+                sessionStorage.setItem('src_current_admin', JSON.stringify(data.admin));
+                return { success: true, admin: data.admin };
+            }
+        } catch (err) {
+            console.warn('Admin API login network error, checking fallbacks', err.message);
+        }
+
+        // 2. Built-in Super Admin fallback check
+        if (u.toLowerCase() === 'boafokyei3@gmail.com' && p === 'Ky2004ei-') {
+            const superAdmin = {
+                id: 'admin-super',
+                username: 'Boafokyei3@gmail.com',
+                name: 'Super Administrator',
+                role: 'Super Admin'
+            };
+            sessionStorage.setItem('src_current_admin', JSON.stringify(superAdmin));
+            return { success: true, admin: superAdmin };
+        }
+
+        // 3. Local storage fallback
         const admin = this.getAdmins().find(a => 
-            a.username.trim().toLowerCase() === u && 
-            (a.password === password || a.password.trim() === p)
+            a.username && a.username.trim().toLowerCase() === u.toLowerCase() && 
+            (a.password === p || a.password === password)
         );
         if (admin) {
             sessionStorage.setItem('src_current_admin', JSON.stringify(admin));
-            return admin;
+            return { success: true, admin };
         }
-        return null;
+
+        return { success: false, message: 'Invalid admin credentials.' };
     },
 
     getCurrentUser() {
