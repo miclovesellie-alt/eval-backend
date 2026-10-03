@@ -337,13 +337,38 @@ app.delete('/api/students/:indexNumber', async (req, res) => {
 app.post('/api/admins', async (req, res) => {
     try {
         const { name, username, password, role } = req.body;
-        const existing = await Admin.findOne({ username: { $regex: new RegExp(`^${username.trim()}$`, 'i') } });
-        if (existing) {
-            return res.status(400).json({ success: false, message: 'Username already exists.' });
+        const u = (username || '').trim();
+        const n = (name || '').trim();
+        if (!u || !n) {
+            return res.status(400).json({ success: false, message: 'Name and username are required.' });
         }
-        const newAdmin = new Admin({ name, username: username.trim(), password, role: role || 'Admin' });
+        const existing = await Admin.findOne({ username: { $regex: new RegExp(`^${u}$`, 'i') } });
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'Username already exists as an admin.' });
+        }
+
+        let finalPassword = password ? password.trim() : '';
+        if (!finalPassword) {
+            // Find existing student by index number or name to maintain their password
+            const existingStudent = await User.findOne({
+                $or: [
+                    { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
+                    { name: { $regex: new RegExp(`^${u}$`, 'i') } },
+                    { name: { $regex: new RegExp(`^${n}$`, 'i') } }
+                ]
+            });
+            if (existingStudent && existingStudent.password) {
+                finalPassword = existingStudent.password;
+            }
+        }
+
+        if (!finalPassword) {
+            return res.status(400).json({ success: false, message: 'Password is required because no registered student was found with this username or name.' });
+        }
+
+        const newAdmin = new Admin({ name: n, username: u, password: finalPassword, role: role || 'Admin' });
         await newAdmin.save();
-        res.json({ success: true, admin: newAdmin });
+        res.json({ success: true, admin: { id: newAdmin._id.toString(), name: newAdmin.name, username: newAdmin.username, role: newAdmin.role } });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

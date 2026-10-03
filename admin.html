@@ -644,8 +644,8 @@
                         </select>
                     </div>
                     <div class="form-group"><label>Full Name</label><input type="text" id="adminEditName" placeholder="Admin's full name"></div>
-                    <div class="form-group"><label>Username / Email</label><input type="text" id="adminEditUser" placeholder="Login username or email"></div>
-                    <div class="form-group"><label>Password <small style="color:var(--text-muted)">(leave blank to keep existing)</small></label><input type="password" id="adminEditPass" placeholder="Password"></div>
+                    <div class="form-group"><label>Username / Email / Index No.</label><input type="text" id="adminEditUser" placeholder="Login username, email or index number"></div>
+                    <div class="form-group"><label>Password <small id="adminPassHint" style="color:var(--primary-light);">(leave blank to maintain existing password)</small></label><input type="password" id="adminEditPass" placeholder="Leave blank to maintain existing password"></div>
                     <div class="form-group"><label>Role</label><select id="adminEditRole"><option value="Super Admin">Super Admin</option><option value="Admin" selected>Admin</option><option value="Moderator">Moderator</option></select></div>
                     <div class="modal-actions">
                         <button class="btn-outline btn-sm" onclick="closeModal('adminModal')"><i class="fas fa-times"></i> Cancel</button>
@@ -965,6 +965,10 @@
         const opt = sel.options[sel.selectedIndex];
         const idx = opt ? opt.getAttribute('data-index') : '';
         if (idx) document.getElementById('adminEditUser').value = idx;
+        const hint = document.getElementById('adminPassHint');
+        if (hint) hint.innerHTML = `<span style="color:#5BF09A;"><i class="fas fa-check-circle"></i> Existing password for ${escapeHtml(val)} will be maintained</span>`;
+        const passInp = document.getElementById('adminEditPass');
+        if (passInp) passInp.placeholder = `Maintaining existing password (or enter new)`;
     };
 
     function escapeHtml(str) {
@@ -1058,14 +1062,19 @@
     window.openAdminModal = function(username, prefillName, prefillUser) {
         populateStudentDropdowns();
         document.getElementById('adminEditUsername').value = username || '';
-        const group = document.getElementById('adminStudentSelectGroup');
+        const group   = document.getElementById('adminStudentSelectGroup');
+        const hint    = document.getElementById('adminPassHint');
+        const passInp = document.getElementById('adminEditPass');
+
         if (username) {
             const admin = DataStore.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
             document.getElementById('adminModalTitle').textContent = 'Edit Admin';
             document.getElementById('adminEditName').value = admin ? admin.name : '';
             document.getElementById('adminEditUser').value = admin ? admin.username : '';
             document.getElementById('adminEditUser').readOnly = (admin && admin.username.toLowerCase() === 'boafokyei3@gmail.com');
-            document.getElementById('adminEditPass').value = '';
+            passInp.value = '';
+            passInp.placeholder = 'Leave blank to keep existing password';
+            if (hint) hint.innerHTML = `(leave blank to keep current password)`;
             document.getElementById('adminEditRole').value = admin ? (admin.role||'Admin') : 'Admin';
             if (group) group.style.display = 'none';
         } else {
@@ -1073,16 +1082,33 @@
             document.getElementById('adminEditName').value = prefillName || '';
             document.getElementById('adminEditUser').value = prefillUser || '';
             document.getElementById('adminEditUser').readOnly = false;
-            document.getElementById('adminEditPass').value = '';
+            passInp.value = '';
             document.getElementById('adminEditRole').value = 'Admin';
             if (group) group.style.display = 'block';
+
+            if (prefillUser || prefillName) {
+                passInp.placeholder = 'Maintaining existing password (or enter new)';
+                if (hint) hint.innerHTML = `<span style="color:#5BF09A;"><i class="fas fa-check-circle"></i> Existing password for ${escapeHtml(prefillName || prefillUser)} will be maintained</span>`;
+                const adminSel = document.getElementById('adminStudentSelect');
+                if (adminSel) {
+                    for (let i = 0; i < adminSel.options.length; i++) {
+                        if (adminSel.options[i].getAttribute('data-index') === prefillUser || adminSel.options[i].value === prefillName) {
+                            adminSel.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                passInp.placeholder = 'Leave blank to maintain existing password';
+                if (hint) hint.innerHTML = `(leave blank to maintain person's existing password)`;
+            }
         }
         document.getElementById('adminModal').classList.add('open');
     };
 
     window.promoteToAdmin = function(studentName, indexNumber) { openAdminModal(null, studentName, indexNumber); };
 
-    window.saveAdmin = function() {
+    window.saveAdmin = async function() {
         const editUsername = document.getElementById('adminEditUsername').value;
         const name     = document.getElementById('adminEditName').value.trim();
         const username = document.getElementById('adminEditUser').value.trim();
@@ -1096,10 +1122,9 @@
             DataStore.updateAdmin(editUsername, updates);
             showToast('Admin updated!');
         } else {
-            if (!password) { showToast('Password is required for new admin.', 'error'); return; }
-            const res = DataStore.addAdmin({name, username, password, role});
+            const res = await DataStore.addAdmin({name, username, password, role});
             if (!res.success) { showToast(res.message, 'error'); return; }
-            showToast('Admin created successfully!');
+            showToast(password ? 'Admin added successfully!' : 'Admin added with existing password maintained!');
         }
         closeModal('adminModal'); loadAdmins();
     };

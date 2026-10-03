@@ -161,24 +161,65 @@ const DataStore = {
     getAdmins() { return this._get('src_admins'); },
     setAdmins(admins) { this._set('src_admins', admins); },
 
-    addAdmin(admin) {
+    async addAdmin(admin) {
         const admins = this.getAdmins();
-        if (admins.find(a => a.username.toLowerCase() === admin.username.toLowerCase())) {
-            return { success: false, message: 'Username already exists.' };
+        const u = (admin.username || '').trim();
+        const n = (admin.name || '').trim();
+        if (admins.find(a => a.username.toLowerCase() === u.toLowerCase())) {
+            return { success: false, message: 'Username already exists as an admin.' };
         }
-        admin.id = admin.id || ('admin-' + Date.now());
-        admin.createdAt = new Date().toISOString();
-        admins.push(admin);
-        this.setAdmins(admins);
 
-        // Sync with MongoDB backend
-        fetch('/api/admins', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(admin)
-        }).catch(err => console.warn('Background MongoDB sync note:', err.message));
+        let localPass = admin.password ? admin.password.trim() : '';
+        if (!localPass) {
+            const users = this.getUsers();
+            const existingStudent = users.find(s => 
+                (s.indexNumber && s.indexNumber.toLowerCase() === u.toLowerCase()) ||
+                (s.name && s.name.toLowerCase() === n.toLowerCase())
+            );
+            if (existingStudent && existingStudent.password) {
+                localPass = existingStudent.password;
+            }
+        }
 
-        return { success: true };
+        try {
+            const res = await fetch('/api/admins', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: n,
+                    username: u,
+                    password: localPass,
+                    role: admin.role
+                })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                return { success: false, message: data.message || 'Failed to add admin.' };
+            }
+            const savedAdmin = {
+                id: (data.admin && data.admin.id) || ('admin-' + Date.now()),
+                name: n,
+                username: u,
+                role: admin.role || 'Admin',
+                createdAt: new Date().toISOString()
+            };
+            if (localPass) savedAdmin.password = localPass;
+            admins.push(savedAdmin);
+            this.setAdmins(admins);
+            return { success: true, admin: savedAdmin };
+        } catch (err) {
+            const savedAdmin = {
+                id: admin.id || ('admin-' + Date.now()),
+                name: n,
+                username: u,
+                role: admin.role || 'Admin',
+                createdAt: new Date().toISOString()
+            };
+            if (localPass) savedAdmin.password = localPass;
+            admins.push(savedAdmin);
+            this.setAdmins(admins);
+            return { success: true, admin: savedAdmin };
+        }
     },
 
     updateAdmin(username, data) {
