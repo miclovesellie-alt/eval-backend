@@ -99,7 +99,28 @@ const DataStore = {
     },
 
     // ---- Users (Students) ----
-    getUsers() { return this._get('src_users'); },
+    getUsers() { 
+        const raw = this._get('src_users');
+        const admins = this.getAdmins();
+        const execs = this.getExecutives();
+        const adminKeys = new Set(admins.flatMap(a => [
+            (a.username || '').toLowerCase(),
+            (a.name || '').toLowerCase()
+        ]).filter(Boolean));
+        const execKeys = new Set(execs.flatMap(e => [
+            (e.indexNumber || '').toLowerCase(),
+            (e.username || '').toLowerCase(),
+            (e.name || '').toLowerCase()
+        ]).filter(Boolean));
+
+        return raw.filter(u => {
+            const idx = (u.indexNumber || '').toLowerCase();
+            const nm = (u.name || '').toLowerCase();
+            if (idx && (adminKeys.has(idx) || execKeys.has(idx))) return false;
+            if (nm && (adminKeys.has(nm) || execKeys.has(nm))) return false;
+            return true;
+        });
+    },
     setUsers(users) { this._set('src_users', users); },
 
     async addUser(user) {
@@ -171,15 +192,35 @@ const DataStore = {
 
         let localPass = admin.password ? admin.password.trim() : '';
         if (!localPass) {
-            const users = this.getUsers();
+            const users = this._get('src_users');
             const existingStudent = users.find(s => 
                 (s.indexNumber && s.indexNumber.toLowerCase() === u.toLowerCase()) ||
                 (s.name && s.name.toLowerCase() === n.toLowerCase())
             );
             if (existingStudent && existingStudent.password) {
                 localPass = existingStudent.password;
+            } else {
+                const execs = this.getExecutives();
+                const existingExec = execs.find(e =>
+                    (e.indexNumber && e.indexNumber.toLowerCase() === u.toLowerCase()) ||
+                    (e.username && e.username.toLowerCase() === u.toLowerCase()) ||
+                    (e.name && e.name.toLowerCase() === n.toLowerCase())
+                );
+                if (existingExec && existingExec.password) {
+                    localPass = existingExec.password;
+                }
             }
         }
+
+        // Remove from local users cache so admin is never in the student list
+        const curUsers = this._get('src_users').filter(s => {
+            const sIdx = (s.indexNumber || '').toLowerCase();
+            const sNm = (s.name || '').toLowerCase();
+            if (u && sIdx === u.toLowerCase()) return false;
+            if (n && sNm === n.toLowerCase()) return false;
+            return true;
+        });
+        this._set('src_users', curUsers);
 
         try {
             const res = await fetch('/api/admins', {
@@ -252,18 +293,62 @@ const DataStore = {
     getExecutives() { return this._get('src_executives'); },
     setExecutives(execs) { this._set('src_executives', execs); },
 
-    addExecutive(exec) {
+    async addExecutive(exec) {
         const execs = this.getExecutives();
+        const idx = (exec.indexNumber || exec.username || '').trim();
+        const n = (exec.name || '').trim();
+
+        // Inherit student or admin password if none provided
+        let localPass = exec.password ? exec.password.trim() : '';
+        if (!localPass) {
+            const users = this._get('src_users');
+            const foundUser = users.find(u => 
+                (idx && u.indexNumber && u.indexNumber.toLowerCase() === idx.toLowerCase()) ||
+                (n && u.name && u.name.toLowerCase() === n.toLowerCase())
+            );
+            if (foundUser && foundUser.password) {
+                localPass = foundUser.password;
+            } else {
+                const admins = this.getAdmins();
+                const foundAdmin = admins.find(a => 
+                    (idx && a.username && a.username.toLowerCase() === idx.toLowerCase()) ||
+                    (n && a.name && a.name.toLowerCase() === n.toLowerCase())
+                );
+                if (foundAdmin && foundAdmin.password) {
+                    localPass = foundAdmin.password;
+                }
+            }
+        }
+        if (localPass) exec.password = localPass;
+        if (idx) {
+            exec.indexNumber = idx;
+            exec.username = idx;
+        }
+
         exec.id = exec.id || ('exec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4));
         exec.createdAt = new Date().toISOString();
         execs.push(exec);
         this.setExecutives(execs);
 
-        fetch('/api/executives', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(exec)
-        }).catch(err => console.warn('Background MongoDB sync note:', err.message));
+        // Remove from local users cache so executive is never in student list
+        const curUsers = this._get('src_users').filter(u => {
+            const uIdx = (u.indexNumber || '').toLowerCase();
+            const uNm = (u.name || '').toLowerCase();
+            if (idx && uIdx === idx.toLowerCase()) return false;
+            if (n && uNm === n.toLowerCase()) return false;
+            return true;
+        });
+        this._set('src_users', curUsers);
+
+        try {
+            await fetch('/api/executives', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(exec)
+            });
+        } catch(err) {
+            console.warn('Background MongoDB sync note:', err.message);
+        }
 
         return { success: true, id: exec.id };
     },
@@ -437,32 +522,58 @@ const DataStore = {
                 body: JSON.stringify({ indexNumber: idx, password: pass })
             });
             const data = await res.json();
-            if (res.ok && data.success && data.user) {
-                sessionStorage.setItem('src_current_user', JSON.stringify(data.user));
-                // Update local password cache for resilience
-                const users = this.getUsers();
-                const uIdx = users.findIndex(u => u.indexNumber === idx);
-                if (uIdx !== -1) {
-                    users[uIdx].password = pass;
-                    this.setUsers(users);
+            if (res.ok && data.success) {
+                // If user is Admin or Executive, redirect straight to admin section
+                if (data.role === 'admin' || data.role === 'executive') {
+                    sessionStorage.setItem('src_current_admin', JSON.stringify(data.admin));
+                    return { success: true, admin: data.admin, role: 'admin' };
                 }
-                return { success: true, user: data.user, role: 'student' };
+                if (data.role === 'student' && data.user) {
+                    sessionStorage.setItem('src_current_user', JSON.stringify(data.user));
+                    // Update local password cache for resilience
+                    const users = this._get('src_users');
+                    const uIdx = users.findIndex(u => u.indexNumber === idx);
+                    if (uIdx !== -1) {
+                        users[uIdx].password = pass;
+                        this.setUsers(users);
+                    }
+                    return { success: true, user: data.user, role: 'student' };
+                }
             }
         } catch (err) {
             console.warn('Network login error, falling back to local cache', err.message);
         }
 
-        // 2. Check if student credentials match local cache
-        const localUser = this.getUsers().find(u => u.indexNumber === idx && u.password === pass);
-        if (localUser) {
-            sessionStorage.setItem('src_current_user', JSON.stringify(localUser));
-            return { success: true, user: localUser, role: 'student' };
-        }
-
-        // 3. Smart check: Did the user enter Admin credentials on the student login page?
+        // 2. Check if credentials match an Admin in local cache
         const adminCheck = await this.loginAdmin(idx, pass);
         if (adminCheck && adminCheck.success) {
             return { success: true, admin: adminCheck.admin, role: 'admin' };
+        }
+
+        // 3. Check if credentials match an Executive in local cache
+        const execs = this.getExecutives();
+        const localExec = execs.find(e => 
+            ((e.username && e.username.toLowerCase() === idx.toLowerCase()) ||
+             (e.indexNumber && e.indexNumber.toLowerCase() === idx.toLowerCase()) ||
+             (e.name && e.name.toLowerCase() === idx.toLowerCase())) &&
+            (e.password === pass)
+        );
+        if (localExec) {
+            const adminObj = {
+                id: localExec.id,
+                name: localExec.name,
+                username: localExec.username || localExec.indexNumber || localExec.name,
+                role: 'Executive'
+            };
+            sessionStorage.setItem('src_current_admin', JSON.stringify(adminObj));
+            return { success: true, admin: adminObj, role: 'admin' };
+        }
+
+        // 4. Check if student credentials match local cache
+        const localUser = this.getUsers().find(u => u.indexNumber.toLowerCase() === idx.toLowerCase() && u.password === pass);
+        if (localUser) {
+            sessionStorage.setItem('src_current_user', JSON.stringify(localUser));
+            return { success: true, user: localUser, role: 'student' };
         }
 
         return { success: false, message: 'Invalid index number or password. Please check your credentials.' };
@@ -501,7 +612,7 @@ const DataStore = {
             return { success: true, admin: superAdmin };
         }
 
-        // 3. Local storage fallback
+        // 3. Local storage fallback for Admins
         const admin = this.getAdmins().find(a => 
             a.username && a.username.trim().toLowerCase() === u.toLowerCase() && 
             (a.password === p || a.password === password)
@@ -509,6 +620,24 @@ const DataStore = {
         if (admin) {
             sessionStorage.setItem('src_current_admin', JSON.stringify(admin));
             return { success: true, admin };
+        }
+
+        // 4. Local storage fallback for Executives
+        const exec = this.getExecutives().find(e =>
+            ((e.username && e.username.trim().toLowerCase() === u.toLowerCase()) ||
+             (e.indexNumber && e.indexNumber.trim().toLowerCase() === u.toLowerCase()) ||
+             (e.name && e.name.trim().toLowerCase() === u.toLowerCase())) &&
+            (e.password === p || e.password === password)
+        );
+        if (exec) {
+            const adminObj = {
+                id: exec.id,
+                name: exec.name,
+                username: exec.username || exec.indexNumber || exec.name,
+                role: 'Executive'
+            };
+            sessionStorage.setItem('src_current_admin', JSON.stringify(adminObj));
+            return { success: true, admin: adminObj };
         }
 
         return { success: false, message: 'Invalid admin credentials.' };

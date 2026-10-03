@@ -34,6 +34,9 @@ const AdminSchema = new mongoose.Schema({
 const ExecutiveSchema = new mongoose.Schema({
     name: { type: String, required: true },
     portfolio: { type: String, required: true },
+    username: { type: String },
+    indexNumber: { type: String },
+    password: { type: String },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -111,13 +114,39 @@ app.get('/api/sync', async (req, res) => {
         const viewerAdmin = req.query.adminUser || '';
         const isSuper = viewerAdmin.toLowerCase() === 'boafokyei3@gmail.com';
 
-        const [users, admins, executives, rawEvals, evalSetting] = await Promise.all([
+        const [rawUsers, admins, executives, rawEvals, evalSetting] = await Promise.all([
             User.find({}).sort({ createdAt: -1 }),
             Admin.find({}).sort({ createdAt: -1 }),
             Executive.find({}).sort({ createdAt: -1 }),
             Evaluation.find({}).sort({ submittedAt: -1 }),
             Setting.findOne({ key: 'eval_open' })
         ]);
+
+        // Filter out anyone who is an Admin or an Executive so they NEVER appear in the user/student list
+        const adminUsernames = new Set(admins.map(a => (a.username || '').toLowerCase()));
+        const adminNames = new Set(admins.map(a => (a.name || '').toLowerCase()));
+        const execIdentifiers = new Set(executives.map(e => (e.indexNumber || e.username || '').toLowerCase()).filter(Boolean));
+        const execNames = new Set(executives.map(e => (e.name || '').toLowerCase()));
+
+        const filteredUsers = rawUsers.filter(u => {
+            const idx = (u.indexNumber || '').toLowerCase();
+            const nm = (u.name || '').toLowerCase();
+            if (adminUsernames.has(idx) || adminNames.has(nm)) return false;
+            if (execIdentifiers.has(idx) || execNames.has(nm)) return false;
+            return true;
+        });
+
+        // Clean up duplicate User documents in MongoDB for admins & executives
+        const toDeleteIds = rawUsers
+            .filter(u => {
+                const idx = (u.indexNumber || '').toLowerCase();
+                const nm = (u.name || '').toLowerCase();
+                return adminUsernames.has(idx) || adminNames.has(nm) || execIdentifiers.has(idx) || execNames.has(nm);
+            })
+            .map(u => u._id);
+        if (toDeleteIds.length > 0) {
+            User.deleteMany({ _id: { $in: toDeleteIds } }).catch(() => {});
+        }
 
         // Anonymity masking for evaluations
         const evals = rawEvals.map(e => {
@@ -132,9 +161,9 @@ app.get('/api/sync', async (req, res) => {
 
         res.json({
             success: true,
-            users: users.map(u => ({ id: u._id, name: u.name, indexNumber: u.indexNumber, createdAt: u.createdAt })),
+            users: filteredUsers.map(u => ({ id: u._id, name: u.name, indexNumber: u.indexNumber, createdAt: u.createdAt })),
             admins: admins.map(a => ({ id: a._id, name: a.name, username: a.username, role: a.role, createdAt: a.createdAt })),
-            executives: executives.map(ex => ({ id: ex._id.toString(), name: ex.name, portfolio: ex.portfolio, createdAt: ex.createdAt })),
+            executives: executives.map(ex => ({ id: ex._id.toString(), name: ex.name, portfolio: ex.portfolio, username: ex.username, indexNumber: ex.indexNumber, createdAt: ex.createdAt })),
             evaluations: evals,
             isEvaluationOpen: evalSetting ? evalSetting.value : true
         });
@@ -150,11 +179,26 @@ app.post('/api/auth/register', async (req, res) => {
         if (!name || !indexNumber || !password) {
             return res.status(400).json({ success: false, message: 'All fields are required.' });
         }
-        const existing = await User.findOne({ indexNumber: indexNumber.trim() });
+        const idx = indexNumber.trim();
+        const existing = await User.findOne({ indexNumber: { $regex: new RegExp(`^${idx}$`, 'i') } });
         if (existing) {
             return res.status(400).json({ success: false, message: 'Index number already registered.' });
         }
-        const newUser = new User({ name: name.trim(), indexNumber: indexNumber.trim(), password });
+        const existingAdmin = await Admin.findOne({ username: { $regex: new RegExp(`^${idx}$`, 'i') } });
+        if (existingAdmin) {
+            return res.status(400).json({ success: false, message: 'This index number belongs to an administrator account. Please log in directly.' });
+        }
+        const existingExec = await Executive.findOne({ 
+            $or: [
+                { username: { $regex: new RegExp(`^${idx}$`, 'i') } },
+                { indexNumber: { $regex: new RegExp(`^${idx}$`, 'i') } }
+            ]
+        });
+        if (existingExec) {
+            return res.status(400).json({ success: false, message: 'This index number belongs to an SRC executive account. Please log in directly.' });
+        }
+
+        const newUser = new User({ name: name.trim(), indexNumber: idx, password });
         await newUser.save();
         res.json({ success: true, user: { id: newUser._id, name: newUser.name, indexNumber: newUser.indexNumber } });
     } catch (err) {
@@ -162,18 +206,90 @@ app.post('/api/auth/register', async (req, res) => {
     }
 });
 
-// 3. Auth: Student Login
+// 3. Auth: Login (Unified for Students, Admins, and Executives)
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { indexNumber, password } = req.body;
-        const user = await User.findOne({ 
-            indexNumber: (indexNumber || '').trim(), 
-            password: password 
+        const u = (indexNumber || '').trim();
+        const p = (password || '').trim();
+
+        // 1. Is this an Admin?
+        const admin = await Admin.findOne({
+            username: { $regex: new RegExp(`^${u}$`, 'i') },
+            password: p
         });
-        if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid index number or password.' });
+        if (admin) {
+            return res.json({ 
+                success: true, 
+                role: 'admin', 
+                admin: { id: admin._id, name: admin.name, username: admin.username, role: admin.role } 
+            });
         }
-        res.json({ success: true, user: { id: user._id, name: user.name, indexNumber: user.indexNumber } });
+
+        // 2. Is this an Executive?
+        const exec = await Executive.findOne({
+            $or: [
+                { username: { $regex: new RegExp(`^${u}$`, 'i') } },
+                { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
+                { name: { $regex: new RegExp(`^${u}$`, 'i') } }
+            ],
+            password: p
+        });
+        if (exec) {
+            const linkedAdmin = await Admin.findOne({
+                $or: [
+                    { username: { $regex: new RegExp(`^${u}$`, 'i') } },
+                    { name: { $regex: new RegExp(`^${exec.name}$`, 'i') } }
+                ]
+            });
+            const adminObj = {
+                id: exec._id.toString(),
+                name: exec.name,
+                username: exec.username || exec.indexNumber || exec.name,
+                role: linkedAdmin ? linkedAdmin.role : 'Executive'
+            };
+            return res.json({
+                success: true,
+                role: 'executive',
+                admin: adminObj,
+                executive: exec
+            });
+        }
+
+        // 3. Regular student
+        const user = await User.findOne({ 
+            indexNumber: { $regex: new RegExp(`^${u}$`, 'i') }, 
+            password: p 
+        });
+        if (user) {
+            // Verify they are not an admin or exec
+            const isAdmin = await Admin.findOne({ username: { $regex: new RegExp(`^${user.indexNumber}$`, 'i') } });
+            if (isAdmin) {
+                return res.json({
+                    success: true,
+                    role: 'admin',
+                    admin: { id: isAdmin._id, name: isAdmin.name, username: isAdmin.username, role: isAdmin.role }
+                });
+            }
+            const isExec = await Executive.findOne({
+                $or: [
+                    { username: { $regex: new RegExp(`^${user.indexNumber}$`, 'i') } },
+                    { indexNumber: { $regex: new RegExp(`^${user.indexNumber}$`, 'i') } },
+                    { name: { $regex: new RegExp(`^${user.name}$`, 'i') } }
+                ]
+            });
+            if (isExec) {
+                return res.json({
+                    success: true,
+                    role: 'executive',
+                    admin: { id: isExec._id.toString(), name: isExec.name, username: isExec.username || isExec.indexNumber || isExec.name, role: 'Executive' }
+                });
+            }
+
+            return res.json({ success: true, role: 'student', user: { id: user._id, name: user.name, indexNumber: user.indexNumber } });
+        }
+
+        return res.status(401).json({ success: false, message: 'Invalid index number or password.' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -189,10 +305,32 @@ app.post('/api/auth/admin-login', async (req, res) => {
             username: { $regex: new RegExp(`^${u}$`, 'i') }, 
             password: p 
         });
-        if (!admin) {
-            return res.status(401).json({ success: false, message: 'Invalid admin credentials.' });
+        if (admin) {
+            return res.json({ success: true, admin: { id: admin._id, name: admin.name, username: admin.username, role: admin.role } });
         }
-        res.json({ success: true, admin: { id: admin._id, name: admin.name, username: admin.username, role: admin.role } });
+
+        // Also allow Executive to log in directly
+        const exec = await Executive.findOne({
+            $or: [
+                { username: { $regex: new RegExp(`^${u}$`, 'i') } },
+                { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
+                { name: { $regex: new RegExp(`^${u}$`, 'i') } }
+            ],
+            password: p
+        });
+        if (exec) {
+            return res.json({ 
+                success: true, 
+                admin: { 
+                    id: exec._id.toString(), 
+                    name: exec.name, 
+                    username: exec.username || exec.indexNumber || exec.name, 
+                    role: 'Executive' 
+                } 
+            });
+        }
+
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials.' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -279,10 +417,64 @@ app.delete('/api/evaluations', async (req, res) => {
 // 9. Executives CRUD
 app.post('/api/executives', async (req, res) => {
     try {
-        const { name, portfolio } = req.body;
-        const exec = new Executive({ name, portfolio });
+        const { name, portfolio, indexNumber, username, password } = req.body;
+        const n = (name || '').trim();
+        const p_pos = (portfolio || '').trim();
+        const idx = (indexNumber || username || '').trim();
+
+        let finalPassword = password ? password.trim() : '';
+        if (!finalPassword) {
+            // Find existing student or admin to maintain password
+            const existingStudent = await User.findOne({
+                $or: [
+                    ...(idx ? [{ indexNumber: { $regex: new RegExp(`^${idx}$`, 'i') } }] : []),
+                    ...(n ? [{ name: { $regex: new RegExp(`^${n}$`, 'i') } }] : [])
+                ]
+            });
+            if (existingStudent && existingStudent.password) {
+                finalPassword = existingStudent.password;
+            } else {
+                const existingAdmin = await Admin.findOne({
+                    $or: [
+                        ...(idx ? [{ username: { $regex: new RegExp(`^${idx}$`, 'i') } }] : []),
+                        ...(n ? [{ name: { $regex: new RegExp(`^${n}$`, 'i') } }] : [])
+                    ]
+                });
+                if (existingAdmin && existingAdmin.password) {
+                    finalPassword = existingAdmin.password;
+                }
+            }
+        }
+
+        const exec = new Executive({ 
+            name: n, 
+            portfolio: p_pos,
+            indexNumber: idx,
+            username: idx,
+            password: finalPassword
+        });
         await exec.save();
-        res.json({ success: true, executive: { id: exec._id.toString(), name: exec.name, portfolio: exec.portfolio } });
+
+        // Remove from User collection if was a student
+        if (idx || n) {
+            await User.deleteMany({
+                $or: [
+                    ...(idx ? [{ indexNumber: { $regex: new RegExp(`^${idx}$`, 'i') } }] : []),
+                    ...(n ? [{ name: { $regex: new RegExp(`^${n}$`, 'i') } }] : [])
+                ]
+            });
+        }
+
+        res.json({ 
+            success: true, 
+            executive: { 
+                id: exec._id.toString(), 
+                name: exec.name, 
+                portfolio: exec.portfolio,
+                indexNumber: exec.indexNumber,
+                username: exec.username
+            } 
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -291,8 +483,14 @@ app.post('/api/executives', async (req, res) => {
 app.put('/api/executives/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, portfolio } = req.body;
-        await Executive.findByIdAndUpdate(id, { name, portfolio });
+        const { name, portfolio, indexNumber, username, password } = req.body;
+        const updates = {};
+        if (name) updates.name = name;
+        if (portfolio) updates.portfolio = portfolio;
+        if (indexNumber) updates.indexNumber = indexNumber;
+        if (username) updates.username = username;
+        if (password) updates.password = password;
+        await Executive.findByIdAndUpdate(id, updates);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -349,7 +547,7 @@ app.post('/api/admins', async (req, res) => {
 
         let finalPassword = password ? password.trim() : '';
         if (!finalPassword) {
-            // Find existing student by index number or name to maintain their password
+            // Find existing student or executive by index number or name to maintain their password
             const existingStudent = await User.findOne({
                 $or: [
                     { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
@@ -359,15 +557,36 @@ app.post('/api/admins', async (req, res) => {
             });
             if (existingStudent && existingStudent.password) {
                 finalPassword = existingStudent.password;
+            } else {
+                const existingExec = await Executive.findOne({
+                    $or: [
+                        { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
+                        { username: { $regex: new RegExp(`^${u}$`, 'i') } },
+                        { name: { $regex: new RegExp(`^${u}$`, 'i') } },
+                        { name: { $regex: new RegExp(`^${n}$`, 'i') } }
+                    ]
+                });
+                if (existingExec && existingExec.password) {
+                    finalPassword = existingExec.password;
+                }
             }
         }
 
         if (!finalPassword) {
-            return res.status(400).json({ success: false, message: 'Password is required because no registered student was found with this username or name.' });
+            return res.status(400).json({ success: false, message: 'Password is required because no registered student or executive was found with this username or name.' });
         }
 
         const newAdmin = new Admin({ name: n, username: u, password: finalPassword, role: role || 'Admin' });
         await newAdmin.save();
+
+        // Remove from User collection if was a student (admins should not be in the user list)
+        await User.deleteMany({
+            $or: [
+                { indexNumber: { $regex: new RegExp(`^${u}$`, 'i') } },
+                { name: { $regex: new RegExp(`^${n}$`, 'i') } }
+            ]
+        });
+
         res.json({ success: true, admin: { id: newAdmin._id.toString(), name: newAdmin.name, username: newAdmin.username, role: newAdmin.role } });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });

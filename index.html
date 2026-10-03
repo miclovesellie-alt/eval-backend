@@ -109,7 +109,6 @@
 
             <div class="login-links">
                 <a href="register.html">Don't have an account? <strong>Register here</strong></a>
-                <a href="admin.html" class="admin-link"><i class="fas fa-shield-alt"></i> Admin Login</a>
             </div>
 
             <div class="extra-links">
@@ -159,7 +158,9 @@
     <script src="data.js"></script>
     <script>
         // Redirect if already logged in
-        if (DataStore.getCurrentUser()) {
+        if (DataStore.getCurrentAdmin()) {
+            window.location.href = 'admin.html';
+        } else if (DataStore.getCurrentUser()) {
             window.location.href = 'evaluate.html';
         }
 
@@ -200,8 +201,8 @@
             try {
                 const res = await DataStore.loginUser(indexNumber, password);
                 if (res.success) {
-                    if (res.role === 'admin') {
-                        // Admin entered email on student page -> smart redirect to admin panel
+                    if (res.role === 'admin' || res.role === 'executive') {
+                        // Admin or Executive entered credentials -> redirect straight to admin panel
                         window.location.href = 'admin.html';
                     } else {
                         window.location.href = 'evaluate.html';

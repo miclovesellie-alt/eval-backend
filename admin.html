@@ -594,9 +594,10 @@
             <div class="modal-body">
                 <div class="modal-form">
                     <input type="hidden" id="execEditId">
+                    <input type="hidden" id="execIndexNumber">
                     <div class="form-group" id="execStudentSelectGroup">
                         <label><i class="fas fa-user-graduate" style="color:var(--primary-light);margin-right:6px;"></i> Select Registered Student <small style="color:var(--text-muted)">(optional)</small></label>
-                        <select id="execStudentSelect" onchange="if(this.value) document.getElementById('execName').value = this.value;">
+                        <select id="execStudentSelect" onchange="onSelectStudentForExec(this.value)">
                             <option value="">-- Choose a student or type name below --</option>
                         </select>
                     </div>
@@ -948,15 +949,52 @@
     // ---- Student Dropdowns ----
     function populateStudentDropdowns() {
         const users = DataStore.getUsers();
-        let opts = '<option value="">-- Choose a registered student --</option>';
+        const execs = DataStore.getExecutives();
+        const admins = DataStore.getAdmins();
+        const adminUsers = new Set(admins.map(a => (a.username || '').toLowerCase()));
+
+        let execOpts = '<option value="">-- Choose a student or type name below --</option>';
         users.forEach(u => {
-            opts += `<option value="${escapeAttr(u.name)}" data-index="${escapeAttr(u.indexNumber)}">${escapeHtml(u.name)} (${escapeHtml(u.indexNumber)})</option>`;
+            execOpts += `<option value="${escapeAttr(u.name)}" data-index="${escapeAttr(u.indexNumber)}">${escapeHtml(u.name)} (${escapeHtml(u.indexNumber)})</option>`;
         });
         const execSel = document.getElementById('execStudentSelect');
+        if (execSel) execSel.innerHTML = execOpts;
+
+        let adminOpts = '<option value="">-- Choose a student or executive --</option>';
+        if (users.length > 0) {
+            adminOpts += '<optgroup label="Registered Students">';
+            users.forEach(u => {
+                adminOpts += `<option value="${escapeAttr(u.name)}" data-index="${escapeAttr(u.indexNumber)}">${escapeHtml(u.name)} (${escapeHtml(u.indexNumber)})</option>`;
+            });
+            adminOpts += '</optgroup>';
+        }
+        const nonAdminExecs = execs.filter(e => {
+            const idx = (e.indexNumber || e.username || '').toLowerCase();
+            return !idx || !adminUsers.has(idx);
+        });
+        if (nonAdminExecs.length > 0) {
+            adminOpts += '<optgroup label="SRC Executives (Dual Role)">';
+            nonAdminExecs.forEach(e => {
+                const idx = e.indexNumber || e.username || '';
+                adminOpts += `<option value="${escapeAttr(e.name)}" data-index="${escapeAttr(idx)}">${escapeHtml(e.name)} &mdash; ${escapeHtml(e.portfolio)}${idx ? ' ('+escapeHtml(idx)+')' : ''}</option>`;
+            });
+            adminOpts += '</optgroup>';
+        }
         const adminSel = document.getElementById('adminStudentSelect');
-        if (execSel) execSel.innerHTML = opts;
-        if (adminSel) adminSel.innerHTML = opts;
+        if (adminSel) adminSel.innerHTML = adminOpts;
     }
+
+    window.onSelectStudentForExec = function(val) {
+        if (!val) {
+            document.getElementById('execIndexNumber').value = '';
+            return;
+        }
+        document.getElementById('execName').value = val;
+        const sel = document.getElementById('execStudentSelect');
+        const opt = sel.options[sel.selectedIndex];
+        const idx = opt ? opt.getAttribute('data-index') : '';
+        document.getElementById('execIndexNumber').value = idx || '';
+    };
 
     window.onSelectStudentForAdmin = function(val) {
         if (!val) return;
@@ -983,16 +1021,39 @@
     // ---- Executives ----
     function loadExecutives() {
         const execs = DataStore.getExecutives();
+        const admins = DataStore.getAdmins();
+        const adminKeys = new Set(admins.flatMap(a => [(a.username||'').toLowerCase(), (a.name||'').toLowerCase()]).filter(Boolean));
+
         if (execs.length === 0) {
             document.getElementById('execTable').innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No executives added yet. Click "Add Executive" or promote a student from the Students tab.</p></div>';
             return;
         }
-        document.getElementById('execTable').innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Portfolio</th><th>Added</th><th>Actions</th></tr></thead><tbody>${execs.map(e => `<tr><td><strong>${escapeHtml(e.name)}</strong></td><td>${escapeHtml(e.portfolio)}</td><td>${new Date(e.createdAt||Date.now()).toLocaleDateString()}</td><td class="action-btns"><button class="btn-primary btn-sm" onclick="openExecModal('${e.id}')"><i class="fas fa-edit"></i></button> <button class="btn-danger btn-sm" onclick="deleteExecutive('${e.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table>`;
+        document.getElementById('execTable').innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Portfolio</th><th>Dual Role</th><th>Added</th><th>Actions</th></tr></thead><tbody>${execs.map(e => {
+            const isAlsoAdmin = adminKeys.has((e.username||'').toLowerCase()) || adminKeys.has((e.indexNumber||'').toLowerCase()) || adminKeys.has((e.name||'').toLowerCase());
+            const dualBadge = isAlsoAdmin 
+                ? '<span class="badge" style="background:rgba(37,211,102,0.2);color:#25D366;font-weight:700;"><i class="fas fa-shield-alt"></i> Executive &amp; Admin</span>'
+                : '<span class="badge" style="background:rgba(212,160,32,0.15);color:var(--accent);">Executive</span>';
+            const adminBtn = !isAlsoAdmin 
+                ? `<button class="btn-primary btn-sm" title="Also make Admin" style="background:#25D366;color:#0B1F14;font-weight:700;" onclick="promoteToAdmin('${escapeAttr(e.name)}','${escapeAttr(e.indexNumber||e.username||'')}')"><i class="fas fa-user-shield"></i> +Admin</button> `
+                : '';
+            return `<tr>
+                <td><strong>${escapeHtml(e.name)}</strong></td>
+                <td>${escapeHtml(e.portfolio)}</td>
+                <td>${dualBadge}</td>
+                <td>${new Date(e.createdAt||Date.now()).toLocaleDateString()}</td>
+                <td class="action-btns">
+                    ${adminBtn}
+                    <button class="btn-primary btn-sm" onclick="openExecModal('${e.id}')"><i class="fas fa-edit"></i></button> 
+                    <button class="btn-danger btn-sm" onclick="deleteExecutive('${e.id}')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('')}</tbody></table>`;
     }
 
-    window.openExecModal = function(id, prefillName) {
+    window.openExecModal = function(id, prefillName, prefillIndex) {
         populateStudentDropdowns();
         document.getElementById('execEditId').value = id || '';
+        document.getElementById('execIndexNumber').value = prefillIndex || '';
         const group  = document.getElementById('execStudentSelectGroup');
         const preset = document.getElementById('execPortfolioPreset');
         if (preset) preset.value = '';
@@ -1001,6 +1062,7 @@
             document.getElementById('execModalTitle').textContent = 'Edit Executive';
             document.getElementById('execName').value = exec ? exec.name : '';
             document.getElementById('execPortfolio').value = exec ? exec.portfolio : '';
+            document.getElementById('execIndexNumber').value = exec ? (exec.indexNumber || exec.username || '') : '';
             if (preset && exec) {
                 for (let i = 0; i < preset.options.length; i++) {
                     if (preset.options[i].value === exec.portfolio) { preset.selectedIndex = i; break; }
@@ -1014,26 +1076,51 @@
             if (group) {
                 group.style.display = 'block';
                 const sel = document.getElementById('execStudentSelect');
-                if (sel && prefillName) sel.value = prefillName;
+                if (sel && (prefillIndex || prefillName)) {
+                    for (let i = 0; i < sel.options.length; i++) {
+                        if ((prefillIndex && sel.options[i].getAttribute('data-index') === prefillIndex) || sel.options[i].value === prefillName) {
+                            sel.selectedIndex = i;
+                            document.getElementById('execIndexNumber').value = sel.options[i].getAttribute('data-index') || prefillIndex || '';
+                            break;
+                        }
+                    }
+                }
             }
         }
         document.getElementById('execModal').classList.add('open');
     };
 
-    window.promoteToExec = function(studentName) { openExecModal(null, studentName); };
+    window.promoteToExec = function(studentName, indexNumber) { openExecModal(null, studentName, indexNumber); };
 
-    window.saveExecutive = function() {
+    window.saveExecutive = async function() {
         const id = document.getElementById('execEditId').value;
         const name = document.getElementById('execName').value.trim();
         const portfolio = document.getElementById('execPortfolio').value.trim();
+        const indexNumber = document.getElementById('execIndexNumber').value.trim();
         if (!name || !portfolio) { showToast('Please enter both name and portfolio.', 'error'); return; }
-        if (id) { DataStore.updateExecutive(id, {name, portfolio}); showToast('Executive updated!'); }
-        else     { DataStore.addExecutive({name, portfolio}); showToast('Executive added!'); }
-        closeModal('execModal'); loadExecutives(); loadDashboard();
+        if (id) { 
+            DataStore.updateExecutive(id, {name, portfolio, indexNumber}); 
+            showToast('Executive updated!'); 
+        } else { 
+            await DataStore.addExecutive({name, portfolio, indexNumber, username: indexNumber}); 
+            showToast('Executive added!'); 
+        }
+        closeModal('execModal'); 
+        loadExecutives(); 
+        loadStudents();
+        populateStudentDropdowns();
+        loadDashboard();
     };
 
     window.deleteExecutive = function(id) {
-        if (confirm('Remove this executive?')) { DataStore.removeExecutive(id); showToast('Executive removed.'); loadExecutives(); }
+        if (confirm('Remove this executive?')) { 
+            DataStore.removeExecutive(id); 
+            showToast('Executive removed.'); 
+            loadExecutives(); 
+            loadStudents();
+            populateStudentDropdowns();
+            loadDashboard();
+        }
     };
 
     // ---- Admins ----
@@ -1126,12 +1213,23 @@
             if (!res.success) { showToast(res.message, 'error'); return; }
             showToast(password ? 'Admin added successfully!' : 'Admin added with existing password maintained!');
         }
-        closeModal('adminModal'); loadAdmins();
+        closeModal('adminModal'); 
+        loadAdmins();
+        loadStudents();
+        populateStudentDropdowns();
+        loadDashboard();
     };
 
     window.deleteAdmin = function(username) {
         if (username.toLowerCase() === 'boafokyei3@gmail.com') { showToast('Cannot delete the Super Admin!', 'error'); return; }
-        if (confirm(`Remove admin "${username}"?`)) { DataStore.removeAdmin(username); showToast('Admin removed.'); loadAdmins(); }
+        if (confirm(`Remove admin "${username}"?`)) { 
+            DataStore.removeAdmin(username); 
+            showToast('Admin removed.'); 
+            loadAdmins(); 
+            loadStudents();
+            populateStudentDropdowns();
+            loadDashboard();
+        }
     };
 
     // ---- Students ----
@@ -1151,7 +1249,7 @@
                 <td>${new Date(s.createdAt||Date.now()).toLocaleDateString()}</td>
                 <td>${evaluated ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'}</td>
                 <td class="action-btns">
-                    <button class="btn-primary btn-sm" title="Add as SRC Executive" style="background:#D4A020;color:#0B1F14;font-weight:700;" onclick="promoteToExec('${escapeAttr(s.name)}')"><i class="fas fa-user-tie"></i> +Exec</button>
+                    <button class="btn-primary btn-sm" title="Add as SRC Executive" style="background:#D4A020;color:#0B1F14;font-weight:700;" onclick="promoteToExec('${escapeAttr(s.name)}','${escapeAttr(s.indexNumber)}')"><i class="fas fa-user-tie"></i> +Exec</button>
                     <button class="btn-primary btn-sm" title="Add as Admin" style="background:#25D366;color:#0B1F14;font-weight:700;" onclick="promoteToAdmin('${escapeAttr(s.name)}','${escapeAttr(s.indexNumber)}')"><i class="fas fa-user-shield"></i> +Admin</button>
                     <button class="btn-outline btn-sm" title="Edit Student" onclick="openStudentModal('${escapeAttr(s.indexNumber)}')"><i class="fas fa-edit"></i></button>
                     ${DataStore.isSuperAdmin(currentAdmin) ? `<button class="btn-primary btn-sm" title="Reset Password" style="background:#2B8CC4;color:white;" onclick="resetStudentPassword('${escapeAttr(s.indexNumber)}','${escapeAttr(s.name)}')"><i class="fas fa-key"></i></button>` : ""}
