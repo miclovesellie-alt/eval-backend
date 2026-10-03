@@ -391,15 +391,28 @@ app.post('/api/settings/toggle-evaluation', async (req, res) => {
 // START SERVER
 // ───────────────────────────────────────────
 
-mongoose.connect(MONGODB_URI)
-    .then(async () => {
-        console.log('✅ Connected to MongoDB Atlas Cluster!');
-        await seedSuperAdmin();
-        app.listen(PORT, () => {
-            console.log(`🚀 CCHN SRC Evaluation Server running live at: http://localhost:${PORT}`);
-        });
-    })
-    .catch(err => {
-        console.error('❌ MongoDB Connection Failure:', err.message);
-        process.exit(1);
+if (!MONGODB_URI) {
+    console.error('❌ FATAL: MONGODB_URI is not set! Please add MONGODB_URI in Render Environment variables.');
+    process.exit(1);
+}
+
+console.log('📡 Connecting to MongoDB Atlas...');
+
+mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 15000
+})
+.then(async () => {
+    console.log('✅ Connected to MongoDB Atlas Cluster!');
+    await seedSuperAdmin();
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 CCHN SRC Evaluation Server running live on port ${PORT}`);
     });
+})
+.catch(err => {
+    console.error('❌ MongoDB Connection Failure:', err.message);
+    if (err.name === 'MongooseServerSelectionError') {
+        console.error('👉 TIP: Check MongoDB Atlas -> Network Access. Make sure 0.0.0.0/0 (Allow Access from Anywhere) is active!');
+    }
+    process.exit(1);
+});
+
