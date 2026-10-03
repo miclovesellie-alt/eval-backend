@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login &mdash; CCHN SRC Evaluation</title>
+    <link rel="icon" type="image/jpeg" href="images/favicon.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Forgot Password Modal */
+        .fp-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(12px); z-index: 9999;
+            display: none; align-items: center; justify-content: center; padding: 24px;
+        }
+        .fp-overlay.open { display: flex; }
+        .fp-card {
+            background: rgba(12,28,18,0.97); border: 1px solid rgba(37,211,102,0.25);
+            border-top: 3px solid var(--primary); border-radius: 24px;
+            padding: 40px 36px; max-width: 440px; width: 100%;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn { from{opacity:0;transform:translateY(20px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
+        .fp-card h2 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 6px; }
+        .fp-card p { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 24px; line-height: 1.6; }
+        .fp-success { background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.25); border-radius: 10px; padding: 14px 16px; font-size: 0.85rem; color: var(--primary-light); display:none; margin-bottom: 16px; }
+        .fp-success.show { display: flex; gap: 10px; align-items: flex-start; }
+        .fp-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .fp-btn { flex:1; padding: 12px; border-radius: 10px; font-family:'Inter',sans-serif; font-weight:700; font-size:0.88rem; cursor:pointer; border:none; transition: all 0.2s; }
+        .fp-btn.primary { background: var(--gradient-primary); color: #0B1F14; }
+        .fp-btn.primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+        .fp-btn.secondary { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); }
+        .fp-btn.secondary:hover { background: rgba(255,255,255,0.1); }
+
+        /* WhatsApp & extra links */
+        .extra-links { display: flex; justify-content: center; gap: 16px; margin-top: 16px; flex-wrap: wrap; }
+        .wa-link {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 9px 18px; border-radius: 50px; font-size: 0.8rem; font-weight: 700;
+            background: rgba(37,211,102,0.12); border: 1px solid rgba(37,211,102,0.25);
+            color: var(--primary-light); text-decoration: none; transition: all 0.25s;
+        }
+        .wa-link:hover { background: rgba(37,211,102,0.22); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+        .wa-link i { font-size: 1rem; }
+        .forgot-link {
+            background: none; border: none; color: var(--text-muted); font-size: 0.8rem;
+            cursor: pointer; font-family: 'Inter', sans-serif; padding: 0;
+            text-decoration: underline; transition: color 0.2s;
+        }
+        .forgot-link:hover { color: var(--primary-light); }
+    </style>
+</head>
+<body>
+    <!-- Motionless Fixed Campus Background -->
+    <div class="fixed-campus-background">
+        <img src="images/campus-building.jpg" alt="Campus">
+    </div>
+
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="images/logo-full.jpg" alt="CCHN Logo">
+                <h1>SRC Evaluation Portal</h1>
+                <div class="school-name">College of Community Health Nursing, Winneba</div>
+                <p>Sign in with your student credentials</p>
+            </div>
+
+            <div class="error-msg" id="errorMsg">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="errorText"></span>
+            </div>
+
+            <form class="login-form" id="loginForm">
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Index Number</label>
+                    <input type="text" id="indexNumber" placeholder="Enter your index number" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <div style="position:relative;">
+                        <input type="password" id="password" placeholder="Enter your password" required style="padding-right:44px;" autocomplete="current-password">
+                        <button type="button" id="togglePass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;transition:color 0.2s;" title="Show/hide password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="text-align:right;margin-top:-6px;margin-bottom:14px;">
+                    <button type="button" class="forgot-link" onclick="document.getElementById('fpOverlay').classList.add('open')">
+                        Forgot password?
+                    </button>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In
+                </button>
+            </form>
+
+            <div class="login-form-divider"><span>CCHN SRC Portal</span></div>
+
+            <div class="login-links">
+                <a href="register.html">Don't have an account? <strong>Register here</strong></a>
+                <a href="admin.html" class="admin-link"><i class="fas fa-shield-alt"></i> Admin Login</a>
+            </div>
+
+            <div class="extra-links">
+                <a href="https://wa.me/233598173019" target="_blank" rel="noopener" class="wa-link">
+                    <i class="fab fa-whatsapp"></i> Contact SRC on WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="fp-overlay" id="fpOverlay">
+        <div class="fp-card">
+            <div style="font-size:2rem;color:var(--primary-light);margin-bottom:14px;"><i class="fas fa-key"></i></div>
+            <h2>Forgot Password?</h2>
+            <p>Enter your index number below and we'll confirm your account. Contact the SRC admin via WhatsApp to reset your password, or ask your admin directly.</p>
+
+            <div class="fp-success" id="fpSuccess">
+                <i class="fas fa-check-circle" style="color:var(--primary-light);margin-top:2px;flex-shrink:0;"></i>
+                <span id="fpSuccessText"></span>
+            </div>
+
+            <div class="error-msg" id="fpError" style="margin-bottom:12px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="fpErrorText"></span>
+            </div>
+
+            <div class="form-group" id="fpInputGroup">
+                <label><i class="fas fa-id-card"></i> Your Index Number</label>
+                <input type="text" id="fpIndexNumber" placeholder="Enter your index number">
+            </div>
+
+            <div class="fp-actions" id="fpButtons">
+                <button class="fp-btn secondary" onclick="closeFP()"><i class="fas fa-times"></i> Cancel</button>
+                <button class="fp-btn primary" onclick="handleForgotPassword()"><i class="fas fa-search"></i> Find My Account</button>
+            </div>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(37,211,102,0.1);text-align:center;">
+                <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px;">Need immediate help? Contact the SRC Admin:</p>
+                <a href="https://wa.me/233598173019" target="_blank" rel="noopener" class="wa-link" style="font-size:0.78rem;padding:7px 16px;">
+                    <i class="fab fa-whatsapp"></i> WhatsApp SRC Admin
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        // Redirect if already logged in
+        if (DataStore.getCurrentUser()) {
+            window.location.href = 'evaluate.html';
+        }
+
+        // Password toggle
+        document.getElementById('togglePass').addEventListener('click', function() {
+            const input = document.getElementById('password');
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye';
+            }
+        });
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const indexNumber = document.getElementById('indexNumber').value.trim();
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const errorText = document.getElementById('errorText');
+
+            if (!indexNumber || !password) {
+                errorText.textContent = 'Please fill in all fields.';
+                errorMsg.classList.add('show');
+                return;
+            }
+
+            const user = DataStore.loginUser(indexNumber, password);
+            if (user) {
+                window.location.href = 'evaluate.html';
+            } else {
+                errorText.textContent = 'Invalid index number or password. Please try again.';
+                errorMsg.classList.add('show');
+            }
+        });
+
+        // Forgot password flow
+        function handleForgotPassword() {
+            const idx = document.getElementById('fpIndexNumber').value.trim();
+            const errorEl = document.getElementById('fpError');
+            const errorText = document.getElementById('fpErrorText');
+            const successEl = document.getElementById('fpSuccess');
+
+            if (!idx) {
+                errorText.textContent = 'Please enter your index number.';
+                errorEl.classList.add('show');
+                return;
+            }
+            errorEl.classList.remove('show');
+
+            const users = DataStore.getUsers();
+            const user = users.find(u => u.indexNumber.toLowerCase() === idx.toLowerCase());
+
+            if (!user) {
+                errorText.textContent = 'No account found with that index number. Please check and try again.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            // Account found - show contact instructions
+            document.getElementById('fpSuccessText').innerHTML =
+                `Account found for <strong>${user.name}</strong>. To reset your password, please contact the SRC Admin via WhatsApp (+233598173019) or ask them directly in the admin panel.`;
+            successEl.classList.add('show');
+            document.getElementById('fpInputGroup').style.display = 'none';
+            document.getElementById('fpButtons').innerHTML =
+                '<button class="fp-btn secondary" onclick="closeFP()"><i class="fas fa-check"></i> Got it</button>';
+        }
+
+        function closeFP() {
+            document.getElementById('fpOverlay').classList.remove('open');
+            // Reset state
+            setTimeout(() => {
+                document.getElementById('fpSuccess').classList.remove('show');
+                document.getElementById('fpError').classList.remove('show');
+                document.getElementById('fpIndexNumber').value = '';
+                document.getElementById('fpInputGroup').style.display = 'block';
+                document.getElementById('fpButtons').innerHTML =
+                    '<button class="fp-btn secondary" onclick="closeFP()"><i class="fas fa-times"></i> Cancel</button>' +
+                    '<button class="fp-btn primary" onclick="handleForgotPassword()"><i class="fas fa-search"></i> Find My Account</button>';
+            }, 300);
+        }
+
+        // Close modal on overlay click
+        document.getElementById('fpOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeFP();
+        });
+    </script>
+</body>
+</html>

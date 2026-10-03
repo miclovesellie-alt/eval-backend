@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin &mdash; CCHN SRC Evaluation</title>
+    <link rel="icon" type="image/jpeg" href="images/favicon.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Motionless Fixed Campus Background -->
+    <div class="fixed-campus-background">
+        <img src="images/campus-building.jpg" alt="Campus">
+    </div>
+
+    <!-- ADMIN LOGIN -->
+    <div id="adminLogin">
+        <div class="login-page">
+            <div class="login-card">
+                <div class="login-logo">
+                    <img src="images/logo-full.jpg" alt="Logo">
+                    <h1>Admin Portal</h1>
+                    <div class="school-name">College of Community Health Nursing, Winneba</div>
+                    <p>Sign in with your administrative credentials</p>
+                </div>
+                <div class="error-msg" id="loginError"><i class="fas fa-exclamation-circle"></i><span id="loginErrorText"></span></div>
+                <form class="login-form" id="adminLoginForm">
+                    <div class="form-group"><label><i class="fas fa-user"></i> Username / Email</label><input type="text" id="adminUsername" placeholder="Enter admin email or username" required></div>
+                    <div class="form-group"><label><i class="fas fa-lock"></i> Password</label><input type="password" id="adminPassword" placeholder="Enter admin password" required></div>
+                    <button type="submit" class="btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-sign-in-alt"></i> Sign In</button>
+                </form>
+                <div class="login-links"><a href="index.html"><i class="fas fa-arrow-left"></i> Back to Student Login</a></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div id="adminPanel" style="display:none;">
+        <!-- Sidebar -->
+        <div class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="images/favicon.jpg" alt="Logo">
+                <h2>SRC Governance</h2>
+                <p id="adminName">Super Administrator</p>
+            </div>
+            <div class="sidebar-nav">
+                <button class="nav-item active" data-tab="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</button>
+                <button class="nav-item" data-tab="executives"><i class="fas fa-users"></i> Executive Board</button>
+                <button class="nav-item" data-tab="admins"><i class="fas fa-user-shield"></i> System Admins</button>
+                <button class="nav-item" data-tab="students"><i class="fas fa-user-graduate"></i> Student Body</button>
+                <button class="nav-item" data-tab="responses"><i class="fas fa-chart-bar"></i> Responses &amp; Reports</button>
+            </div>
+            <div class="sidebar-footer">
+                <div style="padding:10px 16px 4px;font-size:0.72rem;color:var(--text-muted);text-align:center;">
+                    <i class="fas fa-circle" style="color:var(--primary);font-size:0.5rem;margin-right:4px;"></i>
+                    System Online &nbsp;&middot;&nbsp; <span id="sidebarEvalCount">0</span> Eval(s)
+                </div>
+                <button class="nav-item" onclick="adminLogout()" style="color:var(--danger);margin-top:4px;"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
+                <div style="text-align:center;padding:10px 0 6px;font-size:0.68rem;color:var(--text-muted);letter-spacing:0.5px;">CCHN SRC Portal v2.0</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="admin-main">
+            <!-- Institutional Header Banner -->
+            <div class="admin-institution-banner">
+                <div class="banner-left">
+                    <img src="images/logo-full.jpg" alt="CCHN Crest">
+                    <div>
+                        <h2>College of Community Health Nursing, Winneba</h2>
+                        <p><i class="fas fa-university"></i> Student Representative Council (SRC) &mdash; Evaluation Console</p>
+                    </div>
+                </div>
+                <div class="banner-right">
+                    <div class="banner-pill"><i class="fas fa-calendar-alt"></i> <span id="academicYearLabel"></span></div>
+                    <div class="banner-pill" style="background:rgba(212,160,32,0.15);border-color:rgba(212,160,32,0.3);color:var(--accent);"><i class="fas fa-shield-alt"></i> Verified Console</div>
+                    <a href="evaluate.html" target="_blank" class="btn-outline btn-sm" style="font-size:0.8rem;padding:7px 14px;"><i class="fas fa-external-link-alt"></i> Student View</a>
+                </div>
+            </div>
+
+            <!-- DASHBOARD -->
+            <div class="tab-content active" id="tab-dashboard">
+                <div class="admin-header">
+                    <h1>Executive Dashboard</h1>
+                    <p>Welcome back, <strong id="dashAdminName" style="color:var(--primary-light);">Super Administrator</strong> &mdash; Real-time student sentiment &amp; governance evaluation metrics</p>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="admin-stat-card">
+                        <div class="stat-icon green"><i class="fas fa-poll"></i></div>
+                        <div class="stat-value" id="statResponses">0</div>
+                        <div class="stat-title">Total Evaluations</div>
+                        <div class="stat-sub" id="statResponsesSub"><i class="fas fa-check-circle" style="color:var(--primary-light);"></i> <span id="statResponsesVerified">Verified Submissions</span> &bull; <span id="statResponsesEdited" style="color:var(--accent);font-weight:600;">0 Revised</span></div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="stat-icon gold"><i class="fas fa-star"></i></div>
+                        <div class="stat-value" id="statAvgRating">&mdash;</div>
+                        <div class="stat-title">Average Rating</div>
+                        <div class="stat-sub" id="statRatingGrade"><i class="fas fa-chart-line" style="color:var(--accent);"></i> Performance Index</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="stat-value" id="statIssues">0</div>
+                        <div class="stat-title">Campus Issues</div>
+                        <div class="stat-sub"><i class="fas fa-flag" style="color:var(--danger);"></i> Logged for Review</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-user-graduate"></i></div>
+                        <div class="stat-value" id="statStudents">0</div>
+                        <div class="stat-title">Registered Students</div>
+                        <div class="stat-sub"><i class="fas fa-users" style="color:var(--info);"></i> Enrolled Evaluators</div>
+                    </div>
+                </div>
+
+                <!-- Master Evaluation Control Switch -->
+                <div style="background:rgba(14,38,25,0.85);backdrop-filter:blur(16px);border:1px solid rgba(37,211,102,0.2);border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="width:10px;height:10px;border-radius:50%;background:#25D366;display:inline-block;box-shadow:0 0 10px #25D366;" id="evalStatusIndicator"></span>
+                            <h3 style="font-size:1rem;margin:0;">Master Evaluation Control Switch</h3>
+                        </div>
+                        <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:4px;" id="evalStatusText">Students are actively permitted to submit and revise council evaluations.</p>
+                    </div>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <button id="evalToggleBtn" onclick="toggleEvaluation()" style="padding:10px 24px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:0.85rem;font-weight:800;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow-glow);"></button>
+                    </div>
+                </div>
+
+                <!-- Analytics Widgets -->
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h4><span><i class="fas fa-chart-bar" style="color:var(--accent);margin-right:8px;"></i> Performance Distribution</span> <span id="distTotalCount" style="font-size:0.8rem;color:var(--text-muted);">0 Responses</span></h4>
+                        <div class="dist-item">
+                            <div class="dist-header"><span>Excellent (80% - 100%)</span><span id="distP80">0% (0)</span></div>
+                            <div class="dist-bar-bg"><div class="dist-bar-fill" id="distFill80" style="width:0%;background:#25D366;"></div></div>
+                        </div>
+                        <div class="dist-item">
+                            <div class="dist-header"><span>Good (60% - 79%)</span><span id="distP60">0% (0)</span></div>
+                            <div class="dist-bar-bg"><div class="dist-bar-fill" id="distFill60" style="width:0%;background:#34E876;"></div></div>
+                        </div>
+                        <div class="dist-item">
+                            <div class="dist-header"><span>Average (40% - 59%)</span><span id="distP40">0% (0)</span></div>
+                            <div class="dist-bar-bg"><div class="dist-bar-fill" id="distFill40" style="width:0%;background:#D4A020;"></div></div>
+                        </div>
+                        <div class="dist-item">
+                            <div class="dist-header"><span>Needs Attention (&lt; 40%)</span><span id="distP0">0% (0)</span></div>
+                            <div class="dist-bar-bg"><div class="dist-bar-fill" id="distFill0" style="width:0%;background:#DC3545;"></div></div>
+                        </div>
+                    </div>
+
+                    <div class="analytics-card">
+                        <h4><span><i class="fas fa-layer-group" style="color:var(--primary-light);margin-right:8px;"></i> Campus Issues Breakdown</span> <span style="font-size:0.8rem;color:var(--text-muted);" id="issueCategorySummary">Active Logs</span></h4>
+                        <div class="category-badges-grid">
+                            <div class="category-badge-item">
+                                <span class="cat-name"><i class="fas fa-building" style="color:#34E876;"></i> Infrastructure</span>
+                                <span class="cat-count" id="countCatInfra">0</span>
+                            </div>
+                            <div class="category-badge-item">
+                                <span class="cat-name"><i class="fas fa-shield-alt" style="color:#D4A020;"></i> Security &amp; Safety</span>
+                                <span class="cat-count" id="countCatSafety">0</span>
+                            </div>
+                            <div class="category-badge-item">
+                                <span class="cat-name"><i class="fas fa-graduation-cap" style="color:#2B8CC4;"></i> Academic Affairs</span>
+                                <span class="cat-count" id="countCatAcademic">0</span>
+                            </div>
+                            <div class="category-badge-item">
+                                <span class="cat-name"><i class="fas fa-heart" style="color:#EF476F;"></i> Student Welfare</span>
+                                <span class="cat-count" id="countCatWelfare">0</span>
+                            </div>
+                            <div class="category-badge-item" style="grid-column: span 2;">
+                                <span class="cat-name"><i class="fas fa-concierge-bell" style="color:#9CA3C0;"></i> Campus Services &amp; Facilities</span>
+                                <span class="cat-count" id="countCatServices">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toolbar" style="margin-top:12px;">
+                    <h3><i class="fas fa-history" style="color:var(--primary-light);margin-right:8px;"></i> Recent Student Evaluations</h3>
+                    <div class="toolbar-actions">
+                        <button class="btn-outline btn-sm" onclick="exportCSV()"><i class="fas fa-file-export"></i> Download CSV</button>
+                    </div>
+                </div>
+                <div id="recentTable"></div>
+            </div>
+
+            <!-- EXECUTIVES -->
+            <div class="tab-content" id="tab-executives">
+                <div class="toolbar"><h3>Manage Executives</h3><div class="toolbar-actions"><button class="btn-primary btn-sm" onclick="openExecModal()"><i class="fas fa-plus"></i> Add Executive</button></div></div>
+                <div id="execTable"></div>
+            </div>
+
+            <!-- ADMINS -->
+            <div class="tab-content" id="tab-admins">
+                <div class="toolbar"><h3>Manage Admins</h3><div class="toolbar-actions"><button class="btn-primary btn-sm" onclick="openAdminModal()"><i class="fas fa-plus"></i> Add Admin</button></div></div>
+                <div id="adminTable"></div>
+            </div>
+
+            <!-- STUDENTS -->
+            <div class="tab-content" id="tab-students">
+                <div class="toolbar"><h3>Student Management</h3><div class="toolbar-actions"><input type="text" id="studentSearch" placeholder="Search students..." oninput="loadStudents()"></div></div>
+                <div id="studentTable"></div>
+            </div>
+
+            <!-- RESPONSES -->
+            <div class="tab-content" id="tab-responses">
+                <div class="toolbar">
+                    <div>
+                        <h3 style="margin-bottom:4px;"><i class="fas fa-poll-h" style="color:var(--primary-light);margin-right:8px;"></i> Evaluation Responses &amp; Reports</h3>
+                        <p style="font-size:0.8rem;color:var(--text-muted);margin:0;">Track submissions, view student feedback, and audit response revisions</p>
+                    </div>
+                    <div class="toolbar-actions">
+                        <button class="btn-primary btn-sm" onclick="exportCSV()"><i class="fas fa-download"></i> Export CSV</button>
+                        <button class="btn-danger btn-sm" onclick="openResetModal()"><i class="fas fa-trash"></i> Reset All</button>
+                    </div>
+                </div>
+
+                <!-- Responses Filter / Overview Pills -->
+                <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <div class="banner-pill" style="padding:8px 16px;cursor:pointer;" onclick="filterResponses('all')" id="pillAllResponses">
+                        <i class="fas fa-list"></i> All Submissions: <strong id="countAllResponses" style="margin-left:4px;">0</strong>
+                    </div>
+                    <div class="banner-pill" style="padding:8px 16px;cursor:pointer;background:rgba(212,160,32,0.15);border-color:rgba(212,160,32,0.3);color:var(--accent);" onclick="filterResponses('edited')" id="pillEditedResponses">
+                        <i class="fas fa-pen-alt"></i> Updated / Edited Responses: <strong id="countEditedResponses" style="margin-left:4px;">0</strong>
+                    </div>
+                    <div class="banner-pill" style="padding:8px 16px;cursor:pointer;background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:var(--text-secondary);" onclick="filterResponses('original')" id="pillOriginalResponses">
+                        <i class="fas fa-check"></i> Original (Unedited): <strong id="countOriginalResponses" style="margin-left:4px;">0</strong>
+                    </div>
+                </div>
+
+                <!-- DEDICATED UPDATED / EDITED RESPONSES SECTION -->
+                <div id="editedSection" style="margin-bottom:28px;">
+                    <div class="section-block" style="border-top:3px solid var(--accent);background:rgba(12,30,20,0.85);border-radius:var(--radius-md);overflow:hidden;border:1px solid rgba(212,160,32,0.25);">
+                        <div class="section-block-header" style="background:rgba(212,160,32,0.08);display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid rgba(212,160,32,0.15);">
+                            <div class="section-block-title" style="color:var(--accent);font-weight:800;font-size:0.95rem;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-pen-alt"></i> Updated / Revised Responses
+                                <span class="badge" style="background:rgba(212,160,32,0.25);color:var(--accent);margin-left:6px;" id="editedBadgeCount">0</span>
+                            </div>
+                            <span style="font-size:0.75rem;color:var(--text-muted);"><i class="fas fa-info-circle"></i> Showing evaluations where student used their 1-time revision</span>
+                        </div>
+                        <div id="editedResponsesTable"></div>
+                    </div>
+                </div>
+
+                <!-- ALL RESPONSES SECTION -->
+                <div class="toolbar" style="margin-bottom:12px;">
+                    <h3 style="font-size:0.95rem;"><i class="fas fa-table" style="color:var(--primary-light);margin-right:8px;"></i> Master Evaluation Log</h3>
+                </div>
+                <div id="responsesTable"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXEC MODAL -->
+    <div class="modal-overlay" id="execModal">
+        <div class="modal wide">
+            <div class="modal-header">
+                <i class="fas fa-user-tie"></i>
+                <h2 id="execModalTitle">Add Executive</h2>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form">
+                    <input type="hidden" id="execEditId">
+                    <div class="form-group" id="execStudentSelectGroup">
+                        <label><i class="fas fa-user-graduate" style="color:var(--primary-light);margin-right:6px;"></i> Select Registered Student <small style="color:var(--text-muted)">(optional)</small></label>
+                        <select id="execStudentSelect" onchange="if(this.value) document.getElementById('execName').value = this.value;">
+                            <option value="">-- Choose a student or type name below --</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Full Name</label><input type="text" id="execName" placeholder="Executive's full name" required></div>
+                    <div class="form-group">
+                        <label>Portfolio / Position</label>
+                        <select id="execPortfolioPreset" onchange="if(this.value){document.getElementById('execPortfolio').value = this.value;}" style="margin-bottom:8px;">
+                            <option value="">-- Choose Standard Council Position (or type below) --</option>
+                            <option value="SRC President">SRC President</option>
+                            <option value="SRC Vice President">SRC Vice President</option>
+                            <option value="General Secretary">General Secretary</option>
+                            <option value="Financial Secretary">Financial Secretary</option>
+                            <option value="Treasurer">Treasurer</option>
+                            <option value="Organizing Secretary">Organizing Secretary</option>
+                            <option value="Women's Commissioner">Women's Commissioner</option>
+                            <option value="Sports Secretary">Sports Secretary</option>
+                            <option value="Health &amp; Welfare Officer">Health &amp; Welfare Officer</option>
+                            <option value="Public Relations Officer (PRO)">Public Relations Officer (PRO)</option>
+                        </select>
+                        <input type="text" id="execPortfolio" placeholder="Or enter specific portfolio title..." required>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-outline btn-sm" onclick="closeModal('execModal')"><i class="fas fa-times"></i> Cancel</button>
+                        <button class="btn-primary btn-sm" onclick="saveExecutive()"><i class="fas fa-save"></i> Save Executive</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div class="modal-overlay" id="adminModal">
+        <div class="modal wide">
+            <div class="modal-header">
+                <i class="fas fa-user-shield"></i>
+                <h2 id="adminModalTitle">Add Admin</h2>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form">
+                    <input type="hidden" id="adminEditUsername">
+                    <div class="form-group" id="adminStudentSelectGroup">
+                        <label><i class="fas fa-user-graduate" style="color:var(--primary-light);margin-right:6px;"></i> Promote Registered Student <small style="color:var(--text-muted)">(optional)</small></label>
+                        <select id="adminStudentSelect" onchange="onSelectStudentForAdmin(this.value)">
+                            <option value="">-- Choose a student or enter manually --</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Full Name</label><input type="text" id="adminEditName" placeholder="Admin's full name"></div>
+                    <div class="form-group"><label>Username / Email</label><input type="text" id="adminEditUser" placeholder="Login username or email"></div>
+                    <div class="form-group"><label>Password <small style="color:var(--text-muted)">(leave blank to keep existing)</small></label><input type="password" id="adminEditPass" placeholder="Password"></div>
+                    <div class="form-group"><label>Role</label><select id="adminEditRole"><option value="Super Admin">Super Admin</option><option value="Admin" selected>Admin</option><option value="Moderator">Moderator</option></select></div>
+                    <div class="modal-actions">
+                        <button class="btn-outline btn-sm" onclick="closeModal('adminModal')"><i class="fas fa-times"></i> Cancel</button>
+                        <button class="btn-primary btn-sm" onclick="saveAdmin()"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div class="modal-overlay" id="studentModal">
+        <div class="modal wide">
+            <div class="modal-header">
+                <i class="fas fa-user-edit"></i>
+                <h2>Edit Student</h2>
+            </div>
+            <div class="modal-body">
+                <div class="modal-form">
+                    <div class="form-group"><label>Full Name</label><input type="text" id="studentEditName"></div>
+                    <div class="form-group"><label>Index Number</label><input type="text" id="studentEditIndex" readonly style="opacity:0.6;cursor:not-allowed;"></div>
+                    <div class="form-group"><label>New Password <small style="color:var(--text-muted)">(leave blank to keep)</small></label><input type="password" id="studentEditPass" placeholder="New password"></div>
+                    <div class="modal-actions">
+                        <button class="btn-outline btn-sm" onclick="closeModal('studentModal')"><i class="fas fa-times"></i> Cancel</button>
+                        <button class="btn-primary btn-sm" onclick="saveStudent()"><i class="fas fa-save"></i> Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESPONSE DETAIL MODAL -->
+    <div class="modal-overlay" id="responseModal">
+        <div class="modal wide" style="max-width:720px;">
+            <div class="modal-header">
+                <i class="fas fa-chart-bar"></i>
+                <h2>Evaluation Details</h2>
+            </div>
+            <div class="modal-body" style="max-height:72vh;overflow-y:auto;">
+                <div id="responseDetail"></div>
+                <div class="modal-actions" style="margin-top:20px;">
+                    <button class="btn-primary btn-sm" onclick="closeModal('responseModal')"><i class="fas fa-check"></i> Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESET MODAL -->
+    <div class="modal-overlay" id="resetModal">
+        <div class="modal">
+            <div class="modal-icon" style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i></div>
+            <h2>Reset All Responses?</h2>
+            <p>This will <strong>permanently delete</strong> all evaluation responses. This action cannot be undone. Type <strong>RESET</strong> to confirm.</p>
+            <input type="text" id="resetConfirm" placeholder='Type "RESET" to confirm' style="text-align:center;">
+            <div class="modal-actions" style="justify-content:center;margin-top:16px;">
+                <button class="btn-outline btn-sm" onclick="closeModal('resetModal')">Cancel</button>
+                <button class="btn-danger btn-sm" onclick="confirmReset()"><i class="fas fa-trash"></i> Delete All Responses</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg"></span></div>
+
+    <script src="data.js"></script>
+    <script>
+    // ---- Toast ----
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        const icon = t.querySelector('i');
+        t.querySelector('span').textContent = msg;
+        t.className = 'toast show ' + type;
+        icon.className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    // ---- Auth ----
+    let currentAdmin = DataStore.getCurrentAdmin();
+    if (currentAdmin) showPanel();
+
+    document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const u = document.getElementById('adminUsername').value.trim();
+        const p = document.getElementById('adminPassword').value;
+        const admin = DataStore.loginAdmin(u, p);
+        if (admin) { currentAdmin = admin; showPanel(); }
+        else { document.getElementById('loginErrorText').textContent = 'Invalid credentials.'; document.getElementById('loginError').classList.add('show'); }
+    });
+
+    function showPanel() {
+        // Dynamic academic year
+        const now = new Date();
+        const yr = now.getFullYear();
+        const mo = now.getMonth();
+        const acadYear = mo >= 8 ? (yr + '/' + (yr+1)) : ((yr-1) + '/' + yr);
+        const yrEl = document.getElementById('academicYearLabel');
+        if (yrEl) yrEl.textContent = acadYear + ' Academic Session';
+
+        document.getElementById('adminLogin').style.display = 'none';
+        document.getElementById('adminPanel').style.display = 'flex';
+        document.getElementById('adminName').textContent = currentAdmin.name || 'Super Administrator';
+        document.getElementById('dashAdminName').textContent = currentAdmin.name || 'Super Administrator';
+        try { loadDashboard(); } catch (e) { console.error('Dashboard error:', e); }
+        try { loadExecutives(); } catch (e) { console.error('Executives error:', e); }
+        try { loadAdmins(); } catch (e) { console.error('Admins error:', e); }
+        try { loadStudents(); } catch (e) { console.error('Students error:', e); }
+        try { loadResponses(); } catch (e) { console.error('Responses error:', e); }
+    }
+
+    function adminLogout() {
+        DataStore.logoutAdmin();
+        currentAdmin = null;
+        document.getElementById('adminPanel').style.display = 'none';
+        document.getElementById('adminLogin').style.display = 'block';
+    }
+    window.adminLogout = adminLogout;
+
+    // ---- Tab Navigation ----
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + item.dataset.tab).classList.add('active');
+        });
+    });
+
+    // ---- Dashboard ----
+    function loadDashboard() {
+        const stats = DataStore.getEvaluationStats();
+        const users = DataStore.getUsers();
+        document.getElementById('statResponses').textContent = stats.count;
+        const subVer = document.getElementById('statResponsesVerified');
+        if (subVer) subVer.textContent = (stats.count - (stats.editedCount || 0)) + ' Original';
+        const subEd = document.getElementById('statResponsesEdited');
+        if (subEd) subEd.textContent = (stats.editedCount || 0) + ' Revised';
+        const scEl = document.getElementById('sidebarEvalCount');
+        if (scEl) scEl.textContent = stats.count;
+        document.getElementById('statAvgRating').innerHTML = stats.count ? stats.avgRating + '%' : '&mdash;';
+        document.getElementById('statIssues').textContent = stats.issueCount;
+        document.getElementById('statStudents').textContent = users.length;
+        updateToggleUI();
+
+        const allEvals = DataStore.getEvaluationsForAdmin(currentAdmin);
+        const total = allEvals.length;
+        document.getElementById('distTotalCount').textContent = total + (total === 1 ? ' Response' : ' Responses');
+
+        let r80 = 0, r60 = 0, r40 = 0, r0 = 0;
+        let cInfra = 0, cSafety = 0, cAcademic = 0, cWelfare = 0, cServices = 0;
+
+        allEvals.forEach(e => {
+            const r = parseInt(e.overallRating) || 0;
+            if (r >= 80) r80++;
+            else if (r >= 60) r60++;
+            else if (r >= 40) r40++;
+            else r0++;
+
+            if (e.issue && e.issue.title) {
+                const cat = (e.issue.category || '').toLowerCase();
+                if (cat === 'infrastructure') cInfra++;
+                else if (cat === 'safety') cSafety++;
+                else if (cat === 'academic') cAcademic++;
+                else if (cat === 'welfare') cWelfare++;
+                else cServices++;
+            }
+        });
+
+        const p80 = total ? Math.round((r80/total)*100) : 0;
+        const p60 = total ? Math.round((r60/total)*100) : 0;
+        const p40 = total ? Math.round((r40/total)*100) : 0;
+        const p0  = total ? Math.round((r0/total)*100)  : 0;
+
+        document.getElementById('distP80').textContent = `${p80}% (${r80})`;
+        document.getElementById('distP60').textContent = `${p60}% (${r60})`;
+        document.getElementById('distP40').textContent = `${p40}% (${r40})`;
+        document.getElementById('distP0').textContent  = `${p0}% (${r0})`;
+        document.getElementById('distFill80').style.width = p80 + '%';
+        document.getElementById('distFill60').style.width = p60 + '%';
+        document.getElementById('distFill40').style.width = p40 + '%';
+        document.getElementById('distFill0').style.width  = p0  + '%';
+
+        document.getElementById('countCatInfra').textContent    = cInfra;
+        document.getElementById('countCatSafety').textContent   = cSafety;
+        document.getElementById('countCatAcademic').textContent = cAcademic;
+        document.getElementById('countCatWelfare').textContent  = cWelfare;
+        document.getElementById('countCatServices').textContent = cServices;
+
+        const gradeEl = document.getElementById('statRatingGrade');
+        if (stats.count) {
+            const avg = stats.avgRating;
+            let grade = 'Excellent (Grade A)';
+            if (avg < 40) grade = 'Critical Review (Grade D)';
+            else if (avg < 60) grade = 'Moderate (Grade C)';
+            else if (avg < 80) grade = 'Commendable (Grade B)';
+            gradeEl.innerHTML = `<i class="fas fa-chart-line" style="color:var(--accent);"></i> ${grade}`;
+        } else {
+            gradeEl.innerHTML = '<i class="fas fa-chart-line" style="color:var(--accent);"></i> No ratings logged yet';
+        }
+
+        const evals = allEvals.slice(-6).reverse();
+        if (evals.length === 0) {
+            document.getElementById('recentTable').innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>No evaluations submitted yet. When students evaluate, responses will appear here in real-time.</p></div>';
+            return;
+        }
+        const isSuper = DataStore.isSuperAdmin(currentAdmin);
+        document.getElementById('recentTable').innerHTML = `<table class="data-table"><thead><tr><th>Student / ID</th><th>Rating Score</th><th>Submission Date</th><th>Campus Issue</th><th>Action</th></tr></thead><tbody>${evals.map(e => {
+            let studentLabel = '';
+            if (e.isAnonymous && !isSuper) {
+                studentLabel = '<span style="color:var(--text-muted);font-style:italic;"><i class="fas fa-user-secret"></i> Anonymous Student</span>';
+            } else if (e.isAnonymous && isSuper) {
+                studentLabel = `<strong>${escapeHtml(e.userName||'Student')}</strong> <span class="badge" style="background:rgba(212,160,32,0.15);color:var(--accent);font-size:0.65rem;padding:1px 5px;"><i class="fas fa-user-secret"></i> Anon</span> <span style="font-size:0.75rem;color:var(--text-muted);">(${escapeHtml(e.userId||'')})</span>`;
+            } else {
+                studentLabel = `<strong>${escapeHtml(e.userName||'Student')}</strong> <span style="font-size:0.75rem;color:var(--text-muted);">(${escapeHtml(e.userId||'')})</span>`;
+            }
+            return `<tr><td>${studentLabel}</td><td><span style="font-weight:800;color:var(--primary-light);font-size:1.05rem;">${e.overallRating}%</span></td><td>${new Date(e.submittedAt).toLocaleDateString()} ${new Date(e.submittedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${e.issue&&e.issue.title?'<span class="badge badge-warning"><i class="fas fa-flag"></i> '+escapeHtml(e.issue.title.substring(0,20))+'</span>':'<span class="badge badge-success"><i class="fas fa-check"></i> None</span>'}</td><td><button class="btn-primary btn-sm" onclick="viewResponse('${e.id}')"><i class="fas fa-eye"></i> View</button></td></tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    // ---- Evaluation Toggle ----
+    function updateToggleUI() {
+        const isOpen = DataStore.isEvaluationOpen();
+        const btn  = document.getElementById('evalToggleBtn');
+        const text = document.getElementById('evalStatusText');
+        const ind  = document.getElementById('evalStatusIndicator');
+        if (isOpen) {
+            btn.innerHTML = '<i class="fas fa-toggle-on"></i> SUBMISSIONS: OPEN';
+            btn.style.background = '#25D366';
+            btn.style.color = '#0B1F14';
+            text.textContent = 'Students are actively permitted to submit and revise council evaluations.';
+            if (ind) { ind.style.background = '#25D366'; ind.style.boxShadow = '0 0 12px #25D366'; ind.style.animationPlayState = 'running'; }
+        } else {
+            btn.innerHTML = '<i class="fas fa-toggle-off"></i> SUBMISSIONS: PAUSED';
+            btn.style.background = '#DC3545';
+            btn.style.color = '#ffffff';
+            text.textContent = 'Evaluations are currently closed. Students cannot submit or edit evaluations.';
+            if (ind) { ind.style.background = '#DC3545'; ind.style.boxShadow = '0 0 12px #DC3545'; ind.style.animationPlayState = 'paused'; }
+        }
+    }
+
+    window.toggleEvaluation = function() {
+        const isOpen = DataStore.isEvaluationOpen();
+        DataStore.setEvaluationOpen(!isOpen);
+        updateToggleUI();
+        showToast(isOpen ? 'Evaluations closed.' : 'Evaluations opened!');
+    };
+
+    // ---- Student Dropdowns ----
+    function populateStudentDropdowns() {
+        const users = DataStore.getUsers();
+        let opts = '<option value="">-- Choose a registered student --</option>';
+        users.forEach(u => {
+            opts += `<option value="${escapeAttr(u.name)}" data-index="${escapeAttr(u.indexNumber)}">${escapeHtml(u.name)} (${escapeHtml(u.indexNumber)})</option>`;
+        });
+        const execSel = document.getElementById('execStudentSelect');
+        const adminSel = document.getElementById('adminStudentSelect');
+        if (execSel) execSel.innerHTML = opts;
+        if (adminSel) adminSel.innerHTML = opts;
+    }
+
+    window.onSelectStudentForAdmin = function(val) {
+        if (!val) return;
+        document.getElementById('adminEditName').value = val;
+        const sel = document.getElementById('adminStudentSelect');
+        const opt = sel.options[sel.selectedIndex];
+        const idx = opt ? opt.getAttribute('data-index') : '';
+        if (idx) document.getElementById('adminEditUser').value = idx;
+    };
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function escapeAttr(str) {
+        if (!str) return '';
+        return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ---- Executives ----
+    function loadExecutives() {
+        const execs = DataStore.getExecutives();
+        if (execs.length === 0) {
+            document.getElementById('execTable').innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No executives added yet. Click "Add Executive" or promote a student from the Students tab.</p></div>';
+            return;
+        }
+        document.getElementById('execTable').innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Portfolio</th><th>Added</th><th>Actions</th></tr></thead><tbody>${execs.map(e => `<tr><td><strong>${escapeHtml(e.name)}</strong></td><td>${escapeHtml(e.portfolio)}</td><td>${new Date(e.createdAt||Date.now()).toLocaleDateString()}</td><td class="action-btns"><button class="btn-primary btn-sm" onclick="openExecModal('${e.id}')"><i class="fas fa-edit"></i></button> <button class="btn-danger btn-sm" onclick="deleteExecutive('${e.id}')"><i class="fas fa-trash"></i></button></td></tr>`).join('')}</tbody></table>`;
+    }
+
+    window.openExecModal = function(id, prefillName) {
+        populateStudentDropdowns();
+        document.getElementById('execEditId').value = id || '';
+        const group  = document.getElementById('execStudentSelectGroup');
+        const preset = document.getElementById('execPortfolioPreset');
+        if (preset) preset.value = '';
+        if (id) {
+            const exec = DataStore.getExecutives().find(e => e.id === id);
+            document.getElementById('execModalTitle').textContent = 'Edit Executive';
+            document.getElementById('execName').value = exec ? exec.name : '';
+            document.getElementById('execPortfolio').value = exec ? exec.portfolio : '';
+            if (preset && exec) {
+                for (let i = 0; i < preset.options.length; i++) {
+                    if (preset.options[i].value === exec.portfolio) { preset.selectedIndex = i; break; }
+                }
+            }
+            if (group) group.style.display = 'none';
+        } else {
+            document.getElementById('execModalTitle').textContent = prefillName ? `Assign ${prefillName} as Executive` : 'Add Executive';
+            document.getElementById('execName').value = prefillName || '';
+            document.getElementById('execPortfolio').value = '';
+            if (group) {
+                group.style.display = 'block';
+                const sel = document.getElementById('execStudentSelect');
+                if (sel && prefillName) sel.value = prefillName;
+            }
+        }
+        document.getElementById('execModal').classList.add('open');
+    };
+
+    window.promoteToExec = function(studentName) { openExecModal(null, studentName); };
+
+    window.saveExecutive = function() {
+        const id = document.getElementById('execEditId').value;
+        const name = document.getElementById('execName').value.trim();
+        const portfolio = document.getElementById('execPortfolio').value.trim();
+        if (!name || !portfolio) { showToast('Please enter both name and portfolio.', 'error'); return; }
+        if (id) { DataStore.updateExecutive(id, {name, portfolio}); showToast('Executive updated!'); }
+        else     { DataStore.addExecutive({name, portfolio}); showToast('Executive added!'); }
+        closeModal('execModal'); loadExecutives(); loadDashboard();
+    };
+
+    window.deleteExecutive = function(id) {
+        if (confirm('Remove this executive?')) { DataStore.removeExecutive(id); showToast('Executive removed.'); loadExecutives(); }
+    };
+
+    // ---- Admins ----
+    function loadAdmins() {
+        const admins  = DataStore.getAdmins();
+        const isSuper = currentAdmin && currentAdmin.username.toLowerCase() === 'boafokyei3@gmail.com';
+        document.getElementById('adminTable').innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Username / Email</th><th>Role</th><th>Added</th><th>Actions</th></tr></thead><tbody>${admins.map(a => {
+            const isTargetSuper = a.username.toLowerCase() === 'boafokyei3@gmail.com';
+            const roleBadge = isTargetSuper
+                ? '<span class="badge" style="background:var(--accent);color:#0B1F14;font-weight:700;">&#128081; Super Admin</span>'
+                : `<span class="badge badge-success">${escapeHtml(a.role||'Admin')}</span>`;
+            let actions = '';
+            if (isSuper || (currentAdmin && currentAdmin.username.toLowerCase() === a.username.toLowerCase())) {
+                actions += `<button class="btn-primary btn-sm" title="Edit" onclick="openAdminModal('${escapeAttr(a.username)}')"><i class="fas fa-edit"></i></button> `;
+            }
+            if (isSuper) {
+                actions += `<button class="btn-primary btn-sm" title="Reset Password" style="background:#2B8CC4;color:white;" onclick="resetAdminPasswordDirect('${escapeAttr(a.username)}','${escapeAttr(a.name)}')"><i class="fas fa-key"></i></button> `;
+            }
+            if (!isTargetSuper && isSuper) {
+                actions += `<button class="btn-danger btn-sm" title="Delete" onclick="deleteAdmin('${escapeAttr(a.username)}')"><i class="fas fa-trash"></i></button>`;
+            }
+            return `<tr><td><strong>${escapeHtml(a.name)}</strong></td><td>${escapeHtml(a.username)}</td><td>${roleBadge}</td><td>${new Date(a.createdAt||Date.now()).toLocaleDateString()}</td><td class="action-btns">${actions||'<span style="color:var(--text-muted);font-size:0.8rem;">Protected</span>'}</td></tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    window.openAdminModal = function(username, prefillName, prefillUser) {
+        populateStudentDropdowns();
+        document.getElementById('adminEditUsername').value = username || '';
+        const group = document.getElementById('adminStudentSelectGroup');
+        if (username) {
+            const admin = DataStore.getAdmins().find(a => a.username.toLowerCase() === username.toLowerCase());
+            document.getElementById('adminModalTitle').textContent = 'Edit Admin';
+            document.getElementById('adminEditName').value = admin ? admin.name : '';
+            document.getElementById('adminEditUser').value = admin ? admin.username : '';
+            document.getElementById('adminEditUser').readOnly = (admin && admin.username.toLowerCase() === 'boafokyei3@gmail.com');
+            document.getElementById('adminEditPass').value = '';
+            document.getElementById('adminEditRole').value = admin ? (admin.role||'Admin') : 'Admin';
+            if (group) group.style.display = 'none';
+        } else {
+            document.getElementById('adminModalTitle').textContent = 'Add Admin';
+            document.getElementById('adminEditName').value = prefillName || '';
+            document.getElementById('adminEditUser').value = prefillUser || '';
+            document.getElementById('adminEditUser').readOnly = false;
+            document.getElementById('adminEditPass').value = '';
+            document.getElementById('adminEditRole').value = 'Admin';
+            if (group) group.style.display = 'block';
+        }
+        document.getElementById('adminModal').classList.add('open');
+    };
+
+    window.promoteToAdmin = function(studentName, indexNumber) { openAdminModal(null, studentName, indexNumber); };
+
+    window.saveAdmin = function() {
+        const editUsername = document.getElementById('adminEditUsername').value;
+        const name     = document.getElementById('adminEditName').value.trim();
+        const username = document.getElementById('adminEditUser').value.trim();
+        const password = document.getElementById('adminEditPass').value;
+        let   role     = document.getElementById('adminEditRole').value;
+        if (editUsername && editUsername.toLowerCase() === 'boafokyei3@gmail.com') role = 'Super Admin';
+        if (!name || !username) { showToast('Name and username/email are required.', 'error'); return; }
+        if (editUsername) {
+            const updates = {name, role};
+            if (password) updates.password = password;
+            DataStore.updateAdmin(editUsername, updates);
+            showToast('Admin updated!');
+        } else {
+            if (!password) { showToast('Password is required for new admin.', 'error'); return; }
+            const res = DataStore.addAdmin({name, username, password, role});
+            if (!res.success) { showToast(res.message, 'error'); return; }
+            showToast('Admin created successfully!');
+        }
+        closeModal('adminModal'); loadAdmins();
+    };
+
+    window.deleteAdmin = function(username) {
+        if (username.toLowerCase() === 'boafokyei3@gmail.com') { showToast('Cannot delete the Super Admin!', 'error'); return; }
+        if (confirm(`Remove admin "${username}"?`)) { DataStore.removeAdmin(username); showToast('Admin removed.'); loadAdmins(); }
+    };
+
+    // ---- Students ----
+    function loadStudents() {
+        const search   = (document.getElementById('studentSearch')?.value || '').toLowerCase();
+        let   students = DataStore.getUsers();
+        if (search) students = students.filter(s => s.name.toLowerCase().includes(search) || s.indexNumber.toLowerCase().includes(search));
+        if (students.length === 0) {
+            document.getElementById('studentTable').innerHTML = '<div class="empty-state"><i class="fas fa-user-graduate"></i><p>No registered students found.</p></div>';
+            return;
+        }
+        document.getElementById('studentTable').innerHTML = `<table class="data-table"><thead><tr><th>Name</th><th>Index Number</th><th>Registered</th><th>Evaluated</th><th>Promote / Actions</th></tr></thead><tbody>${students.map(s => {
+            const evaluated = DataStore.hasUserEvaluated(s.indexNumber);
+            return `<tr>
+                <td><strong>${escapeHtml(s.name)}</strong></td>
+                <td>${escapeHtml(s.indexNumber)}</td>
+                <td>${new Date(s.createdAt||Date.now()).toLocaleDateString()}</td>
+                <td>${evaluated ? '<span class="badge badge-success">Yes</span>' : '<span class="badge badge-danger">No</span>'}</td>
+                <td class="action-btns">
+                    <button class="btn-primary btn-sm" title="Add as SRC Executive" style="background:#D4A020;color:#0B1F14;font-weight:700;" onclick="promoteToExec('${escapeAttr(s.name)}')"><i class="fas fa-user-tie"></i> +Exec</button>
+                    <button class="btn-primary btn-sm" title="Add as Admin" style="background:#25D366;color:#0B1F14;font-weight:700;" onclick="promoteToAdmin('${escapeAttr(s.name)}','${escapeAttr(s.indexNumber)}')"><i class="fas fa-user-shield"></i> +Admin</button>
+                    <button class="btn-outline btn-sm" title="Edit Student" onclick="openStudentModal('${escapeAttr(s.indexNumber)}')"><i class="fas fa-edit"></i></button>
+                    ${DataStore.isSuperAdmin(currentAdmin) ? `<button class="btn-primary btn-sm" title="Reset Password" style="background:#2B8CC4;color:white;" onclick="resetStudentPassword('${escapeAttr(s.indexNumber)}','${escapeAttr(s.name)}')"><i class="fas fa-key"></i></button>` : ""}
+                    <button class="btn-danger btn-sm" title="Delete Student" onclick="deleteStudent('${escapeAttr(s.indexNumber)}')"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    window.openStudentModal = function(indexNumber) {
+        const student = DataStore.getUsers().find(s => s.indexNumber === indexNumber);
+        if (!student) return;
+        document.getElementById('studentEditName').value  = student.name;
+        document.getElementById('studentEditIndex').value = student.indexNumber;
+        document.getElementById('studentEditPass').value  = '';
+        document.getElementById('studentModal').classList.add('open');
+    };
+
+    window.saveStudent = function() {
+        const indexNumber = document.getElementById('studentEditIndex').value;
+        const name        = document.getElementById('studentEditName').value.trim();
+        const password    = document.getElementById('studentEditPass').value;
+        const updates = {name};
+        if (password) updates.password = password;
+        DataStore.updateUser(indexNumber, updates);
+        showToast('Student updated!');
+        closeModal('studentModal'); loadStudents();
+    };
+
+    window.deleteStudent = function(indexNumber) {
+        if (confirm('Delete this student? This cannot be undone.')) {
+            DataStore.removeUser(indexNumber);
+            showToast('Student deleted.');
+            loadStudents(); loadDashboard();
+        }
+    };
+
+    // ---- Responses ----
+    let currentResponseFilter = 'all';
+
+    window.filterResponses = function(type) {
+        currentResponseFilter = type;
+        document.querySelectorAll('#pillAllResponses, #pillEditedResponses, #pillOriginalResponses').forEach(p => p.style.outline = 'none');
+        if (type === 'all') document.getElementById('pillAllResponses').style.outline = '2px solid var(--primary)';
+        if (type === 'edited') document.getElementById('pillEditedResponses').style.outline = '2px solid var(--accent)';
+        if (type === 'original') document.getElementById('pillOriginalResponses').style.outline = '2px solid var(--text-secondary)';
+        renderResponsesTables();
+    };
+
+    function loadResponses() {
+        renderResponsesTables();
+    }
+
+    function renderResponsesTables() {
+        const evals = DataStore.getEvaluationsForAdmin(currentAdmin);
+        const total = evals.length;
+        const editedEvals = evals.filter(e => e.isEdited || (e.editCount && e.editCount > 0));
+        const originalEvals = evals.filter(e => !e.isEdited && (!e.editCount || e.editCount === 0));
+
+        // Update counts
+        const cntAll = document.getElementById('countAllResponses');
+        if (cntAll) cntAll.textContent = total;
+        const cntEd = document.getElementById('countEditedResponses');
+        if (cntEd) cntEd.textContent = editedEvals.length;
+        const cntOrig = document.getElementById('countOriginalResponses');
+        if (cntOrig) cntOrig.textContent = originalEvals.length;
+        const badgeEd = document.getElementById('editedBadgeCount');
+        if (badgeEd) badgeEd.textContent = editedEvals.length + (editedEvals.length === 1 ? ' Revised' : ' Revised');
+
+        const isSuper = DataStore.isSuperAdmin(currentAdmin);
+
+        // Render Dedicated Edited Section Table
+        const edContainer = document.getElementById('editedResponsesTable');
+        if (edContainer) {
+            if (editedEvals.length === 0) {
+                edContainer.innerHTML = '<div class="empty-state" style="padding:28px;"><i class="fas fa-history" style="font-size:1.8rem;margin-bottom:8px;color:var(--accent);"></i><p style="margin:0;font-size:0.85rem;">No student has edited their responses yet. When a student uses their 1-time revision, it will be highlighted in this section.</p></div>';
+            } else {
+                edContainer.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>Student</th><th>Rating Score</th><th>Original Date</th><th>Revision Date</th><th>Campus Issue</th><th>Actions</th></tr></thead><tbody>${editedEvals.map((e, i) => {
+                    let studentLabel = '';
+                    if (e.isAnonymous && !isSuper) {
+                        studentLabel = '<span style="color:var(--text-muted);font-style:italic;"><i class="fas fa-user-secret"></i> Anonymous Student</span>';
+                    } else if (e.isAnonymous && isSuper) {
+                        studentLabel = `<strong>${escapeHtml(e.userName||'Student')}</strong> <span class="badge" style="background:rgba(212,160,32,0.15);color:var(--accent);font-size:0.65rem;padding:1px 5px;"><i class="fas fa-user-secret"></i> Anon</span> <span style="font-size:0.75rem;color:var(--text-muted);">(${escapeHtml(e.userId||'')})</span>`;
+                    } else {
+                        studentLabel = `<strong>${escapeHtml(e.userName||'Student')}</strong> <span style="font-size:0.75rem;color:var(--text-muted);">(${escapeHtml(e.userId||'')})</span>`;
+                    }
+                    const origDate = new Date(e.submittedAt).toLocaleDateString() + ' ' + new Date(e.submittedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+                    const revDate = e.updatedAt ? (new Date(e.updatedAt).toLocaleDateString() + ' ' + new Date(e.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})) : 'Revised';
+                    return `<tr>
+                        <td>${i+1}</td>
+                        <td>${studentLabel}</td>
+                        <td><span style="font-weight:800;color:var(--primary-light);font-size:1.05rem;">${e.overallRating}%</span></td>
+                        <td style="font-size:0.8rem;color:var(--text-muted);">${origDate}</td>
+                        <td><span class="badge" style="background:rgba(212,160,32,0.18);border:1px solid rgba(212,160,32,0.3);color:var(--accent);font-weight:700;"><i class="fas fa-edit"></i> ${revDate}</span></td>
+                        <td>${e.issue&&e.issue.title?'<span class="badge badge-warning">'+escapeHtml(e.issue.title.substring(0,18))+'</span>':'<span style="color:var(--text-muted)">&mdash;</span>'}</td>
+                        <td><button class="btn-primary btn-sm" onclick="viewResponse('${e.id}')"><i class="fas fa-eye"></i> View</button></td>
+                    </tr>`;
+                }).join('')}</tbody></table>`;
+            }
+        }
+
+        // Determine which list to show in Master Table based on filter
+        let displayList = evals;
+        if (currentResponseFilter === 'edited') displayList = editedEvals;
+        else if (currentResponseFilter === 'original') displayList = originalEvals;
+
+        const mainTable = document.getElementById('responsesTable');
+        if (!mainTable) return;
+
+        if (displayList.length === 0) {
+            mainTable.innerHTML = `<div class="empty-state"><i class="fas fa-chart-bar"></i><p>No responses found for the selected filter (${currentResponseFilter}).</p></div>`;
+            return;
+        }
+
+        mainTable.innerHTML = `<table class="data-table"><thead><tr><th>#</th><th>Student</th><th>Rating</th><th>Status</th><th>Concerns</th><th>Campus Issue</th><th>Submission Date</th><th>Actions</th></tr></thead><tbody>${displayList.map((e,i) => {
+            let studentLabel = '';
+            if (e.isAnonymous && !isSuper) {
+                studentLabel = '<span style="color:var(--text-muted);font-style:italic;"><i class="fas fa-user-secret"></i> Anonymous Student</span>';
+            } else if (e.isAnonymous && isSuper) {
+                studentLabel = `<strong>${escapeHtml(e.userName||'Student')}</strong> <span class="badge" style="background:rgba(212,160,32,0.15);color:var(--accent);font-size:0.65rem;padding:1px 5px;"><i class="fas fa-user-secret"></i> Anon</span>`;
+            } else {
+                studentLabel = escapeHtml(e.userName||'Anonymous');
+            }
+
+            const statusBadge = (e.isEdited || (e.editCount && e.editCount > 0)) 
+                ? '<span class="badge" style="background:rgba(212,160,32,0.18);border:1px solid rgba(212,160,32,0.3);color:var(--accent);font-weight:700;"><i class="fas fa-pen-alt"></i> Updated</span>' 
+                : '<span class="badge badge-success"><i class="fas fa-check"></i> Original</span>';
+
+            const subDate = new Date(e.submittedAt).toLocaleDateString() + ' ' + new Date(e.submittedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+            return `<tr>
+                <td>${i+1}</td>
+                <td>${studentLabel}</td>
+                <td><strong style="color:var(--primary-light);font-size:1.05rem;">${e.overallRating}%</strong></td>
+                <td>${statusBadge}</td>
+                <td>${escapeHtml((e.concerns||'').substring(0,40))}${(e.concerns||'').length>40?'...':''}</td>
+                <td>${e.issue&&e.issue.title?'<span class="badge badge-warning">'+escapeHtml(e.issue.title.substring(0,18))+'</span>':'<span style="color:var(--text-muted)">&mdash;</span>'}</td>
+                <td style="font-size:0.8rem;color:var(--text-secondary);">${subDate}</td>
+                <td><button class="btn-primary btn-sm" onclick="viewResponse('${e.id}')"><i class="fas fa-eye"></i></button></td>
+            </tr>`;
+        }).join('')}</tbody></table>`;
+    }
+
+    window.viewResponse = function(id) {
+        const rawEvals = DataStore.getEvaluations();
+        const e = rawEvals.find(ev => ev.id === id);
+        if (!e) return;
+        const isSuper = DataStore.isSuperAdmin(currentAdmin);
+
+        let studentHeader = '';
+        if (e.isAnonymous && !isSuper) {
+            studentHeader = `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);">
+                    <div><strong style="color:var(--text-primary);">Evaluator:</strong> <span style="color:var(--text-muted);font-style:italic;"><i class="fas fa-user-secret"></i> Anonymous Student</span> <span style="font-size:0.78rem;color:var(--text-muted);">(Identity Protected)</span></div>
+                    <span class="badge" style="background:rgba(150,150,150,0.15);color:#aaa;"><i class="fas fa-eye-slash"></i> Hidden</span>
+                </div>
+            `;
+        } else if (e.isAnonymous && isSuper) {
+            studentHeader = `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(37,211,102,0.08);padding:12px 16px;border-radius:10px;border:1px solid rgba(37,211,102,0.25);">
+                    <div><strong style="color:var(--text-primary);">Evaluator:</strong> <strong>${escapeHtml(e.userName)}</strong> <span style="font-size:0.8rem;color:var(--text-muted);">(${escapeHtml(e.userId)})</span></div>
+                    <span class="badge" style="background:rgba(212,160,32,0.18);color:var(--accent);font-weight:700;"><i class="fas fa-user-secret"></i> Anonymous (Super Admin Revealed)</span>
+                </div>
+            `;
+        } else {
+            studentHeader = `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(37,211,102,0.05);padding:12px 16px;border-radius:10px;border:1px solid rgba(37,211,102,0.15);">
+                    <div><strong style="color:var(--text-primary);">Evaluator:</strong> <strong>${escapeHtml(e.userName||'Student')}</strong> <span style="font-size:0.8rem;color:var(--text-muted);">(${escapeHtml(e.userId||'')})</span></div>
+                    <span class="badge badge-success"><i class="fas fa-check-circle"></i> Verified Student</span>
+                </div>
+            `;
+        }
+
+        let editStatusHeader = '';
+        if (e.isEdited || (e.editCount && e.editCount > 0)) {
+            const editTime = e.updatedAt ? (new Date(e.updatedAt).toLocaleDateString() + ' ' + new Date(e.updatedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})) : 'Recorded';
+            editStatusHeader = `
+                <div style="background:rgba(212,160,32,0.1);border:1px solid rgba(212,160,32,0.3);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;">
+                    <i class="fas fa-history" style="color:var(--accent);font-size:1.3rem;flex-shrink:0;"></i>
+                    <div style="font-size:0.85rem;color:var(--text-secondary);">
+                        <strong style="color:var(--accent);display:block;margin-bottom:2px;">Revision Logged &bull; Final Update: ${editTime}</strong>
+                        <span>Original submission date: ${new Date(e.submittedAt).toLocaleDateString()} ${new Date(e.submittedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} (Student 1-time revision permission used).</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        let execHtml = '';
+        if (e.executiveRatings && Object.keys(e.executiveRatings).length > 0) {
+            const execs = DataStore.getExecutives();
+            execHtml = '<h4 style="margin-top:16px;color:var(--accent);">Executive Ratings</h4>';
+            for (const [eid, rating] of Object.entries(e.executiveRatings)) {
+                const exec = execs.find(x => x.id === eid);
+                execHtml += `<p><strong>${exec ? exec.name : eid}:</strong> ${'&#9733;'.repeat(rating)}${'&#9734;'.repeat(5-rating)}</p>`;
+            }
+        }
+        let starsHtml = '';
+        if (e.starRatings && Object.keys(e.starRatings).length > 0) {
+            starsHtml = '<h4 style="margin-top:16px;color:var(--accent);">Category Ratings</h4>';
+            for (const [cat, val] of Object.entries(e.starRatings)) {
+                starsHtml += `<p><strong>${cat}:</strong> ${'&#9733;'.repeat(val)}${'&#9734;'.repeat(5-val)}</p>`;
+            }
+        }
+        document.getElementById('responseDetail').innerHTML = `
+            <div style="display:grid;gap:16px;font-size:0.9rem;">
+                ${studentHeader}
+                ${editStatusHeader}
+                <div><strong style="color:var(--primary-light);">Overall Rating:</strong> <span style="font-size:1.5rem;font-weight:800;">${e.overallRating}%</span></div>
+                ${starsHtml}
+                ${execHtml}
+                <div><h4 style="color:var(--danger);">Areas of Concern</h4><p style="color:var(--text-secondary);white-space:pre-wrap;">${escapeHtml(e.concerns)||'&mdash;'}</p></div>
+                <div><h4 style="color:var(--primary-light);">Commendations</h4><p style="color:var(--text-secondary);white-space:pre-wrap;">${escapeHtml(e.commendations)||'&mdash;'}</p></div>
+                <div><h4 style="color:var(--accent);">Recommendations</h4><p style="color:var(--text-secondary);white-space:pre-wrap;">${escapeHtml(e.recommendations)||'&mdash;'}</p></div>
+                ${e.issue&&e.issue.title?`<div style="padding:16px;background:rgba(220,53,69,0.08);border:1px solid rgba(220,53,69,0.2);border-radius:8px;"><h4 style="color:var(--danger);">Campus Issue</h4><p><strong>Title:</strong> ${escapeHtml(e.issue.title)}</p><p><strong>Category:</strong> ${escapeHtml(e.issue.category)}</p><p><strong>Location:</strong> ${escapeHtml(e.issue.location)||'&mdash;'}</p><p><strong>Priority:</strong> ${escapeHtml(e.issue.priority)}</p><p style="color:var(--text-secondary);white-space:pre-wrap;margin-top:8px;">${escapeHtml(e.issue.description)||'&mdash;'}</p></div>`:''}
+                <p style="font-size:0.78rem;color:var(--text-muted);">Submitted: ${new Date(e.submittedAt).toLocaleString()}</p>
+            </div>`;
+        document.getElementById('responseModal').classList.add('open');
+    };
+
+    window.openResetModal = function() { document.getElementById('resetConfirm').value = ''; document.getElementById('resetModal').classList.add('open'); };
+
+    window.confirmReset = function() {
+        if (document.getElementById('resetConfirm').value.trim() === 'RESET') {
+            DataStore.resetEvaluations();
+            showToast('All responses have been deleted.');
+            closeModal('resetModal'); loadResponses(); loadDashboard();
+        } else {
+            showToast('Type RESET to confirm.', 'error');
+        }
+    };
+
+    window.exportCSV = function() {
+        const evals = DataStore.getEvaluationsForAdmin(currentAdmin);
+        if (evals.length === 0) { showToast('No responses to export.', 'error'); return; }
+        const headers = ['ID','Student','Rating','Concerns','Commendations','Recommendations','Issue Title','Issue Category','Issue Priority','Issue Description','Date'];
+        const rows = evals.map(e => [e.id, e.userName||'', e.overallRating, `"${(e.concerns||'').replace(/"/g,'""')}"`, `"${(e.commendations||'').replace(/"/g,'""')}"`, `"${(e.recommendations||'').replace(/"/g,'""')}"`, e.issue?e.issue.title:'', e.issue?e.issue.category:'', e.issue?e.issue.priority:'', e.issue?`"${(e.issue.description||'').replace(/"/g,'""')}"`:'' , e.submittedAt]);
+        const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const blob = new Blob([csv], {type:'text/csv'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'src_evaluations_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        showToast('CSV exported!');
+    };
+
+    // ---- Super Admin: Reset Student Password ----
+    window.resetStudentPassword = function(indexNumber, name) {
+        if (!DataStore.isSuperAdmin(currentAdmin)) { showToast('Only the Super Admin can reset passwords.', 'error'); return; }
+        const newPass = prompt('Reset password for ' + name + '\nEnter new password (min 6 chars):');
+        if (!newPass) return;
+        if (newPass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+        DataStore.resetUserPassword(indexNumber, newPass);
+        showToast('Password reset for ' + name + '!');
+    };
+
+    // ---- Anonymous eval badge in responses ----
+    function anonBadge(e) {
+        return e.isAnonymous ? '<span class="badge" style="background:rgba(150,150,150,0.15);color:#aaa;"><i class="fas fa-user-secret"></i> Anon</span> ' : '';
+    }
+    
+    window.resetAdminPasswordDirect = function(username, name) {
+        if (!DataStore.isSuperAdmin(currentAdmin)) { showToast('Only Super Admin can reset passwords.', 'error'); return; }
+        const newPass = prompt('Reset password for Admin: ' + name + ' (' + username + ')\nEnter new password (min 6 chars):');
+        if (!newPass) return;
+        if (newPass.length < 6) { showToast('Password must be at least 6 characters.', 'error'); return; }
+        DataStore.resetAdminPassword(username, newPass);
+        showToast('Password reset for admin ' + name + '!');
+        loadAdmins();
+    };
+</script>
+</body>
+</html>

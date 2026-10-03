@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluate — CCHN SRC Evaluation</title>
+    <link rel="icon" type="image/jpeg" href="images/favicon.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .closed-banner {
+            min-height: 100vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            padding: 40px 24px; position: relative; z-index: 1;
+        }
+        .closed-banner .closed-icon { font-size: 4rem; color: var(--danger); margin-bottom: 20px; opacity: 0.7; }
+        .closed-banner h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 12px; }
+        .closed-banner p { color: var(--text-secondary); max-width: 500px; margin-bottom: 28px; }
+
+        .my-response { max-width: 800px; margin: 0 auto; padding: 24px; position: relative; z-index: 1; }
+        .response-header { text-align: center; margin-bottom: 32px; padding-top: 100px; }
+        .response-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; margin-bottom: 8px; }
+        .response-header p { color: var(--text-secondary); }
+        .response-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 20px; padding: 28px; margin-bottom: 20px;
+        }
+        .response-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .response-card h3 i { font-size: 0.9rem; }
+        .response-card .response-text { color: var(--text-secondary); white-space: pre-wrap; font-size: 0.9rem; line-height: 1.7; }
+        .response-rating-big { font-size: 3rem; font-weight: 900; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .response-stars { color: var(--accent); letter-spacing: 2px; font-size: 1.1rem; }
+        .response-meta { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+        .response-actions { display: flex; gap: 12px; justify-content: center; margin: 32px 0; }
+        .issue-box { padding: 16px; background: rgba(220,53,69,0.06); border: 1px solid rgba(220,53,69,0.15); border-radius: 12px; margin-top: 12px; }
+        .issue-box p { margin: 4px 0; font-size: 0.88rem; color: var(--text-secondary); }
+        .issue-box strong { color: var(--text-primary); }
+        .updated-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.2); border-radius: 50px; font-size: 0.72rem; color: var(--primary-light); font-weight: 600; }
+
+        /* ── Slide transitions ── */
+        .full-page { transition: none; position: relative; }
+        .full-page.slide-out-left { animation: slideOutLeft 0.35s ease forwards; }
+        .full-page.slide-out-right { animation: slideOutRight 0.35s ease forwards; }
+        .full-page.slide-in-right { animation: slideInRight 0.35s ease forwards; }
+        .full-page.slide-in-left { animation: slideInLeft 0.35s ease forwards; }
+        @keyframes slideOutLeft { from { transform: translateX(0); opacity:1; } to { transform: translateX(-60px); opacity:0; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity:1; } to { transform: translateX(60px); opacity:0; } }
+        @keyframes slideInRight { from { transform: translateX(60px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+        @keyframes slideInLeft { from { transform: translateX(-60px); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+        /* ── Anonymous toggle ── */
+        .anon-toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(37,211,102,0.06); border: 1px solid rgba(37,211,102,0.2);
+            border-radius: 14px; padding: 18px 20px; margin-bottom: 20px; gap: 16px;
+        }
+        .anon-toggle-info { display: flex; align-items: flex-start; gap: 14px; flex: 1; }
+        .anon-toggle-info > i { font-size: 1.4rem; color: var(--primary-light); margin-top: 2px; flex-shrink: 0; }
+        .anon-toggle-info strong { font-size: 0.95rem; display: block; margin-bottom: 4px; }
+        .anon-toggle-info p { font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height: 1.5; }
+        .toggle-switch { position: relative; display: inline-block; width: 52px; height: 28px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top:0; left:0; right:0; bottom:0; background: rgba(255,255,255,0.1); border-radius: 28px; transition: 0.3s; border: 1px solid rgba(255,255,255,0.15); }
+        .toggle-slider:before { content: ''; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+        .toggle-switch input:checked + .toggle-slider { background: var(--primary); border-color: var(--primary); }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(24px); }
+
+        /* ── UI improvements ── */
+        .nav-user-name { font-weight: 700; color: var(--primary-light); }
+        #progressBar { transition: width 0.4s ease; }
+        .section-tag { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--primary-light); background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.2); padding: 5px 14px; border-radius: 50px; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+        .section-desc { color: var(--text-secondary); font-size: 0.92rem; }
+        .rating-card, .feedback-card, .issues-container, .submit-card { animation: fadeSlideUp 0.5s ease both; }
+        @keyframes fadeSlideUp { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
+        .tag { transition: all 0.2s ease; cursor: pointer; }
+        .tag:hover { transform: translateY(-2px); }
+        .tag.selected {
+            background: rgba(37,211,102,0.2) !important;
+            border-color: var(--primary) !important;
+            color: var(--primary-light) !important;
+            box-shadow: 0 0 10px rgba(37,211,102,0.25);
+        }
+        .submit-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .rating-card {
+            box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+            border: 1px solid rgba(37,211,102,0.2);
+            border-top: 3px solid var(--primary);
+        }
+        .exec-card {
+            background: rgba(14,38,25,0.85);
+            border: 1px solid rgba(37,211,102,0.15);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            transition: all 0.25s ease;
+        }
+        .exec-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .exec-stars i {
+            cursor: pointer;
+            font-size: 1.25rem;
+            transition: transform 0.15s ease, color 0.15s ease;
+            padding: 2px;
+        }
+        .exec-stars i:hover { transform: scale(1.25); }
+        .mini-stars i {
+            cursor: pointer;
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+        .mini-stars i:hover { transform: scale(1.25); }
+        .step.active .step-number {
+            box-shadow: 0 0 16px var(--primary);
+            animation: pulseStep 1.8s infinite;
+        }
+        @keyframes pulseStep {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); box-shadow: 0 0 22px var(--primary); }
+        }
+        .page-nav { padding: 28px 0 40px; display: flex; gap: 12px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <!-- Motionless Fixed Campus Background -->
+    <div class="fixed-campus-background">
+        <img src="images/campus-building.jpg" alt="Campus">
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar scrolled">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="images/favicon.jpg" alt="Logo">
+                <span>SRC Evaluation</span>
+            </div>
+            <div class="nav-user">
+                <span class="nav-user-name" id="userGreeting"></span>
+                <button class="nav-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- EVALUATIONS CLOSED VIEW -->
+    <div id="closedView" style="display:none;">
+        <div class="closed-banner">
+            <div class="closed-icon"><i class="fas fa-lock"></i></div>
+            <h2>Evaluations Are Currently Closed</h2>
+            <p>The SRC evaluation period is not currently active. Please check back later or contact the SRC for more information.</p>
+            <div id="closedPreviousLink"></div>
+        </div>
+    </div>
+
+    <!-- MY RESPONSES VIEW (after evaluation) -->
+    <div id="responsesView" style="display:none;">
+        <div class="my-response">
+            <div class="response-header">
+                <h2><i class="fas fa-clipboard-check"></i> Your Evaluation</h2>
+                <p>You have already submitted your evaluation. You can review your responses below or make changes.</p>
+            </div>
+            <div id="myResponseContent"></div>
+            <div class="response-actions" id="responseActionButtons">
+                <button class="btn-primary" onclick="enterEditMode()"><i class="fas fa-edit"></i> Edit My Responses</button>
+                <button class="btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator" id="stepIndicator" style="display:none;">
+        <div class="step active" data-step="1"><div class="step-number">1</div><span class="step-text">Rate</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-step="2"><div class="step-number">2</div><span class="step-text">Feedback</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-step="3"><div class="step-number">3</div><span class="step-text">Issues</span></div>
+        <div class="step-line"></div>
+        <div class="step" data-step="4"><div class="step-number">4</div><span class="step-text">Submit</span></div>
+    </div>
+
+    <!-- EVALUATION FORM -->
+    <form id="evaluationForm" novalidate style="display:none;">
+
+        <!-- STEP 1: Rating -->
+        <div class="full-page active" id="step1">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-tag"><i class="fas fa-star"></i> Step 1 of 4</span>
+                    <h2 class="section-title">Overall Performance Rating</h2>
+                    <p class="section-desc">How would you rate the SRC Board's overall performance this term?</p>
+                </div>
+                <div class="rating-card animate-on-scroll">
+                    <div class="rating-display">
+                        <div class="rating-circle">
+                            <svg viewBox="0 0 200 200">
+                                <defs><linearGradient id="ratingGradient" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="#25D366"/><stop offset="100%" stop-color="#5BF09A"/></linearGradient></defs>
+                                <circle class="rating-track" cx="100" cy="100" r="85"/>
+                                <circle class="rating-fill" cx="100" cy="100" r="85" id="ratingArc"/>
+                            </svg>
+                            <div class="rating-value"><span class="rating-number" id="ratingNumber">50</span><span class="rating-percent">%</span></div>
+                        </div>
+                        <div class="rating-label" id="ratingLabel">Average</div>
+                    </div>
+                    <div class="slider-container">
+                        <div class="slider-labels"><span>0% — Poor</span><span>100% — Excellent</span></div>
+                        <div class="custom-slider-track" id="sliderTrack"><div class="custom-slider-fill" id="sliderFill"></div><div class="custom-slider-thumb" id="sliderThumb"></div></div>
+                        <input type="hidden" name="rating" id="ratingInput" value="50">
+                    </div>
+                    <div class="rating-breakdown">
+                        <div class="breakdown-item"><label>Transparency & Communication</label><div class="mini-stars" data-name="transparency"><i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i></div></div>
+                        <div class="breakdown-item"><label>Events & Activities</label><div class="mini-stars" data-name="events"><i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i></div></div>
+                        <div class="breakdown-item"><label>Student Advocacy</label><div class="mini-stars" data-name="advocacy"><i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i></div></div>
+                        <div class="breakdown-item"><label>Leadership & Governance</label><div class="mini-stars" data-name="leadership"><i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i></div></div>
+                        <div class="breakdown-item"><label>Responsiveness to Students</label><div class="mini-stars" data-name="responsiveness"><i class="fas fa-star" data-value="1"></i><i class="fas fa-star" data-value="2"></i><i class="fas fa-star" data-value="3"></i><i class="fas fa-star" data-value="4"></i><i class="fas fa-star" data-value="5"></i></div></div>
+                    </div>
+                </div>
+                <div class="exec-section animate-on-scroll">
+                    <h3><i class="fas fa-users"></i> Rate Individual Executives</h3>
+                    <p>Optional — rate each SRC executive individually</p>
+                    <div class="exec-grid" id="execGrid"></div>
+                </div>
+                <div class="page-nav"><button type="button" class="btn-primary" onclick="goToStep(2)">Next <i class="fas fa-arrow-right"></i></button></div>
+            </div>
+        </div>
+
+        <!-- STEP 2: Feedback -->
+        <div class="full-page" id="step2">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-tag"><i class="fas fa-comments"></i> Step 2 of 4</span>
+                    <h2 class="section-title">Detailed Feedback</h2>
+                    <p class="section-desc">Share your thoughts across three key areas. Be specific and constructive.</p>
+                </div>
+                <div class="feedback-grid">
+                    <div class="feedback-card concern animate-on-scroll">
+                        <div class="card-header"><div class="card-icon concern-icon"><i class="fas fa-exclamation-triangle"></i></div><div><h3>Areas of Concern</h3><p>What could the SRC improve on?</p></div></div>
+                        <div class="card-body">
+                            <div class="tag-selector"><span class="tag" data-category="concern">Lack of communication</span><span class="tag" data-category="concern">Unfulfilled promises</span><span class="tag" data-category="concern">Poor event planning</span><span class="tag" data-category="concern">Budget misuse</span><span class="tag" data-category="concern">Inaccessibility</span><span class="tag" data-category="concern">Lack of inclusivity</span></div>
+                            <div class="textarea-wrapper"><textarea name="concerns" id="concerns" placeholder="Describe specific areas where the SRC is falling short..." rows="4"></textarea><div class="char-count"><span id="concernCount">0</span> / 1000</div></div>
+                        </div>
+                    </div>
+                    <div class="feedback-card commend animate-on-scroll">
+                        <div class="card-header"><div class="card-icon commend-icon"><i class="fas fa-trophy"></i></div><div><h3>Commendations</h3><p>What is the SRC doing well?</p></div></div>
+                        <div class="card-body">
+                            <div class="tag-selector"><span class="tag" data-category="commend">Great communication</span><span class="tag" data-category="commend">Successful events</span><span class="tag" data-category="commend">Active advocacy</span><span class="tag" data-category="commend">Good leadership</span><span class="tag" data-category="commend">Student engagement</span><span class="tag" data-category="commend">Transparency</span></div>
+                            <div class="textarea-wrapper"><textarea name="commendations" id="commendations" placeholder="Acknowledge what the SRC has done well..." rows="4"></textarea><div class="char-count"><span id="commendCount">0</span> / 1000</div></div>
+                        </div>
+                    </div>
+                    <div class="feedback-card recommend animate-on-scroll">
+                        <div class="card-header"><div class="card-icon recommend-icon"><i class="fas fa-lightbulb"></i></div><div><h3>Recommendations</h3><p>What should the SRC prioritize next?</p></div></div>
+                        <div class="card-body">
+                            <div class="tag-selector"><span class="tag" data-category="recommend">More town halls</span><span class="tag" data-category="recommend">Mental health support</span><span class="tag" data-category="recommend">Academic resources</span><span class="tag" data-category="recommend">Safety improvements</span><span class="tag" data-category="recommend">Social events</span><span class="tag" data-category="recommend">Financial transparency</span></div>
+                            <div class="textarea-wrapper"><textarea name="recommendations" id="recommendations" placeholder="Propose actionable ideas the SRC should consider..." rows="4"></textarea><div class="char-count"><span id="recommendCount">0</span> / 1000</div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="page-nav">
+                    <button type="button" class="btn-outline" onclick="goToStep(1)"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="button" class="btn-primary" onclick="goToStep(3)">Next <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: Campus Issues -->
+        <div class="full-page" id="step3">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-tag"><i class="fas fa-flag"></i> Step 3 of 4</span>
+                    <h2 class="section-title">Campus Issues & Concerns</h2>
+                    <p class="section-desc">Report any pressing campus issues that need the SRC's attention.</p>
+                </div>
+                <div class="issues-container animate-on-scroll">
+                    <div class="issue-categories">
+                        <button type="button" class="issue-cat active" data-cat="infrastructure"><i class="fas fa-building"></i><span>Infrastructure</span></button>
+                        <button type="button" class="issue-cat" data-cat="safety"><i class="fas fa-shield-alt"></i><span>Safety & Security</span></button>
+                        <button type="button" class="issue-cat" data-cat="academic"><i class="fas fa-graduation-cap"></i><span>Academic Affairs</span></button>
+                        <button type="button" class="issue-cat" data-cat="welfare"><i class="fas fa-heart"></i><span>Student Welfare</span></button>
+                        <button type="button" class="issue-cat" data-cat="services"><i class="fas fa-concierge-bell"></i><span>Campus Services</span></button>
+                        <button type="button" class="issue-cat" data-cat="other"><i class="fas fa-ellipsis-h"></i><span>Other</span></button>
+                    </div>
+                    <input type="hidden" name="issueCategory" id="issueCategory" value="infrastructure">
+                    <div class="issue-form">
+                        <div class="form-group"><label><i class="fas fa-heading"></i> Issue Title</label><input type="text" id="issueTitle" placeholder="Give your issue a clear, descriptive title" maxlength="120"></div>
+                        <div class="form-row">
+                            <div class="form-group"><label><i class="fas fa-map-marker-alt"></i> Location on Campus</label><input type="text" id="issueLocation" placeholder="e.g., Library, Lecture Hall"></div>
+                            <div class="form-group"><label><i class="fas fa-exclamation-circle"></i> Urgency Level</label><select id="issuePriority"><option value="low">Low — Can wait</option><option value="medium" selected>Medium — Needs attention</option><option value="high">High — Urgent</option><option value="critical">Critical — Immediate action</option></select></div>
+                        </div>
+                        <div class="form-group"><label><i class="fas fa-align-left"></i> Describe the Issue</label><textarea id="issueDescription" rows="5" placeholder="What is the issue? How does it affect students?"></textarea><div class="char-count"><span id="issueDescCount">0</span> / 2000</div></div>
+                    </div>
+                </div>
+                <div class="page-nav">
+                    <button type="button" class="btn-outline" onclick="goToStep(2)"><i class="fas fa-arrow-left"></i> Previous</button>
+                    <button type="button" class="btn-primary" onclick="goToStep(4)">Review & Submit <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 4: Review & Submit -->
+        <div class="full-page" id="step4">
+            <div class="container">
+                <div class="section-header animate-on-scroll">
+                    <span class="section-tag"><i class="fas fa-paper-plane"></i> Step 4 of 4</span>
+                    <h2 class="section-title" id="submitTitle">Review & Submit</h2>
+                    <p class="section-desc" id="submitDesc">Review your responses and submit your evaluation.</p>
+                </div>
+                <div class="submit-card animate-on-scroll">
+                    <div class="submit-summary">
+                        <div class="summary-item"><div class="summary-icon"><i class="fas fa-star"></i></div><div class="summary-detail"><span class="summary-label">Overall Rating</span><span class="summary-value" id="summaryRating">50%</span></div></div>
+                        <div class="summary-item"><div class="summary-icon"><i class="fas fa-comments"></i></div><div class="summary-detail"><span class="summary-label">Feedback Sections</span><span class="summary-value" id="summaryFeedback">0 / 3 completed</span></div></div>
+                        <div class="summary-item"><div class="summary-icon"><i class="fas fa-flag"></i></div><div class="summary-detail"><span class="summary-label">Campus Issue</span><span class="summary-value" id="summaryIssue">Not reported</span></div></div>
+                        <div class="summary-item"><div class="summary-icon" id="summaryAnonIcon"><i class="fas fa-user-check"></i></div><div class="summary-detail"><span class="summary-label">Identity Mode</span><span class="summary-value" id="summaryAnonMode">Verified</span></div></div>
+                    </div>
+                    <div class="anon-toggle-row">
+                        <div class="anon-toggle-info">
+                            <i class="fas fa-user-secret"></i>
+                            <div>
+                                <strong>Submit Anonymously</strong>
+                                <p>Your name and index number will be hidden from admins and executives. Only the Super Admin can identify anonymous submissions.</p>
+                            </div>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="anonymousToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submitBtn">
+                        <span class="btn-text" id="submitBtnText">Submit Evaluation</span>
+                        <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> Submitting...</span>
+                        <span class="btn-success"><i class="fas fa-check"></i> Saved!</span>
+                    </button>
+                </div>
+                <div class="page-nav"><button type="button" class="btn-outline" onclick="goToStep(3)"><i class="fas fa-arrow-left"></i> Previous</button></div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Success Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal">
+            <div class="modal-icon"><i class="fas fa-check-circle"></i></div>
+            <h2 id="modalTitle">Thank You!</h2>
+            <p id="modalMessage">Your evaluation has been submitted successfully. Your feedback is invaluable in shaping a better campus experience.</p>
+            <div id="confetti" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;"></div>
+            <button class="modal-btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <script src="data.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Auth guard
+        const user = DataStore.getCurrentUser();
+        if (!user) { window.location.href = 'index.html'; return; }
+
+        document.getElementById('userGreeting').textContent = 'Hi, ' + user.name;
+
+        let isEditMode = false;
+        const existingEval = DataStore.getUserEvaluation(user.indexNumber);
+        const evalOpen = DataStore.isEvaluationOpen();
+
+        // Decide which view to show
+        if (!evalOpen && !existingEval) {
+            // Evaluations closed, no previous response
+            document.getElementById('closedView').style.display = 'block';
+        } else if (!evalOpen && existingEval) {
+            // Evaluations closed but has previous response — show it
+            document.getElementById('closedView').style.display = 'block';
+            document.getElementById('closedPreviousLink').innerHTML = '<button class="btn-outline" onclick="showMyResponses()" style="margin-top:12px;"><i class="fas fa-clipboard-check"></i> View My Responses</button>';
+        } else if (evalOpen && existingEval) {
+            // Already evaluated — show responses with edit option
+            showMyResponses();
+        } else {
+            // Fresh evaluation
+            showForm();
+        }
+
+        function showForm() {
+            document.getElementById('evaluationForm').style.display = 'block';
+            document.getElementById('stepIndicator').style.display = 'flex';
+            document.getElementById('responsesView').style.display = 'none';
+            document.getElementById('closedView').style.display = 'none';
+        }
+
+        window.showMyResponses = function() {
+            const ev = DataStore.getUserEvaluation(user.indexNumber);
+            if (!ev) return;
+
+            document.getElementById('closedView').style.display = 'none';
+            document.getElementById('evaluationForm').style.display = 'none';
+            document.getElementById('stepIndicator').style.display = 'none';
+            document.getElementById('responsesView').style.display = 'block';
+
+            const execs = DataStore.getExecutives();
+            let execHtml = '';
+            if (ev.executiveRatings && Object.keys(ev.executiveRatings).length > 0) {
+                execHtml = Object.entries(ev.executiveRatings).map(([eid, r]) => {
+                    const exec = execs.find(x => x.id === eid);
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><span>${exec ? exec.name : eid}</span><span class="response-stars">${'★'.repeat(r)}${'☆'.repeat(5-r)}</span></div>`;
+                }).join('');
+                execHtml = `<div class="response-card"><h3><i class="fas fa-users" style="color:var(--accent);"></i> Executive Ratings</h3>${execHtml}</div>`;
+            }
+
+            let starsHtml = '';
+            if (ev.starRatings && Object.keys(ev.starRatings).length > 0) {
+                starsHtml = Object.entries(ev.starRatings).map(([cat, v]) => {
+                    const labels = {transparency:'Transparency & Communication',events:'Events & Activities',advocacy:'Student Advocacy',leadership:'Leadership & Governance',responsiveness:'Responsiveness to Students'};
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);"><span>${labels[cat]||cat}</span><span class="response-stars">${'★'.repeat(v)}${'☆'.repeat(5-v)}</span></div>`;
+                }).join('');
+                starsHtml = `<div class="response-card"><h3><i class="fas fa-star" style="color:var(--accent);"></i> Category Ratings</h3>${starsHtml}</div>`;
+            }
+
+            let issueHtml = '';
+            if (ev.issue && ev.issue.title) {
+                issueHtml = `<div class="response-card"><h3><i class="fas fa-flag" style="color:var(--danger);"></i> Campus Issue Reported</h3><div class="issue-box"><p><strong>Title:</strong> ${ev.issue.title}</p><p><strong>Category:</strong> ${ev.issue.category || '—'}</p><p><strong>Location:</strong> ${ev.issue.location || '—'}</p><p><strong>Priority:</strong> ${ev.issue.priority || '—'}</p><p style="margin-top:8px;">${ev.issue.description || ''}</p></div></div>`;
+            }
+
+            const updatedBadge = ev.updatedAt ? `<span class="updated-badge"><i class="fas fa-edit"></i> Last edited ${new Date(ev.updatedAt).toLocaleDateString()} ${new Date(ev.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>` : '';
+            const anonBadge = ev.isAnonymous ? `<span class="updated-badge" style="background:rgba(212,160,32,0.15);border-color:rgba(212,160,32,0.3);color:var(--accent);"><i class="fas fa-user-secret"></i> Anonymous Submission</span>` : `<span class="updated-badge"><i class="fas fa-user-check"></i> Standard Submission</span>`;
+
+            const canEdit = DataStore.canUserEdit(user.indexNumber);
+
+            let editNoticeHtml = '';
+            if (ev.isEdited || (ev.editCount && ev.editCount > 0)) {
+                editNoticeHtml = `
+                    <div style="background:rgba(212,160,32,0.08);border:1px solid rgba(212,160,32,0.25);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+                        <i class="fas fa-check-double" style="color:var(--accent);font-size:1.5rem;flex-shrink:0;"></i>
+                        <div>
+                            <strong style="color:var(--text-primary);font-size:0.95rem;display:block;margin-bottom:2px;">Revision Recorded &bull; Final Version Locked</strong>
+                            <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">You have used your single allowed revision on ${new Date(ev.updatedAt).toLocaleDateString()}. Your responses are now permanently submitted to the council.</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                editNoticeHtml = `
+                    <div style="background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.25);border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px;">
+                        <i class="fas fa-info-circle" style="color:var(--primary-light);font-size:1.5rem;flex-shrink:0;"></i>
+                        <div>
+                            <strong style="color:var(--text-primary);font-size:0.95rem;display:block;margin-bottom:2px;">One-Time Revision Allowed</strong>
+                            <p style="font-size:0.82rem;color:var(--text-muted);margin:0;">Need to change something? You are permitted to edit your responses <strong>once</strong>. After updating, your responses become permanent.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('myResponseContent').innerHTML = `
+                ${editNoticeHtml}
+                <div class="response-card" style="text-align:center;">
+                    <h3 style="justify-content:center;"><i class="fas fa-chart-line" style="color:var(--primary-light);"></i> Overall Rating</h3>
+                    <div class="response-rating-big">${ev.overallRating}%</div>
+                    <div class="response-meta" style="display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:6px;">
+                        <span>Submitted ${new Date(ev.submittedAt).toLocaleDateString()}</span>
+                        ${anonBadge}
+                        ${updatedBadge}
+                    </div>
+                </div>
+                ${starsHtml}
+                ${execHtml}
+                <div class="response-card"><h3><i class="fas fa-exclamation-triangle" style="color:var(--danger);"></i> Areas of Concern</h3><div class="response-text">${ev.concerns || '<em style="color:var(--text-muted);">No concerns provided</em>'}</div></div>
+                <div class="response-card"><h3><i class="fas fa-trophy" style="color:var(--primary-light);"></i> Commendations</h3><div class="response-text">${ev.commendations || '<em style="color:var(--text-muted);">No commendations provided</em>'}</div></div>
+                <div class="response-card"><h3><i class="fas fa-lightbulb" style="color:var(--accent);"></i> Recommendations</h3><div class="response-text">${ev.recommendations || '<em style="color:var(--text-muted);">No recommendations provided</em>'}</div></div>
+                ${issueHtml}
+            `;
+
+            const actContainer = document.getElementById('responseActionButtons');
+            if (actContainer) {
+                if (canEdit && evalOpen) {
+                    actContainer.innerHTML = `
+                        <button class="btn-primary" onclick="enterEditMode()"><i class="fas fa-edit"></i> Edit My Response (1 Edit Allowed)</button>
+                        <button class="btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    `;
+                } else if (!evalOpen) {
+                    actContainer.innerHTML = `
+                        <button class="btn-outline" disabled style="opacity:0.6;cursor:not-allowed;"><i class="fas fa-lock"></i> Evaluations Closed</button>
+                        <button class="btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    `;
+                } else {
+                    actContainer.innerHTML = `
+                        <button class="btn-outline" disabled style="opacity:0.6;cursor:not-allowed;" title="You have already edited your responses"><i class="fas fa-lock"></i> Response Finalized (1-time edit used)</button>
+                        <button class="btn-outline" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    `;
+                }
+            }
+        };
+
+        window.enterEditMode = function() {
+            if (!evalOpen) { alert('Evaluations are currently closed. You cannot edit at this time.'); return; }
+            if (!DataStore.canUserEdit(user.indexNumber)) {
+                alert('You have already revised your response once. Further edits are not permitted.');
+                return;
+            }
+            isEditMode = true;
+            const ev = DataStore.getUserEvaluation(user.indexNumber);
+            showForm();
+            document.getElementById('submitBtnText').textContent = 'Update & Finalize Evaluation';
+            document.getElementById('submitTitle').textContent = 'Review & Finalize Update';
+            document.getElementById('submitDesc').textContent = 'Review your revisions carefully. You can only update your responses once.';
+
+            // Pre-fill form with existing data
+            if (ev) {
+                updateRating(parseInt(ev.overallRating));
+                document.getElementById('concerns').value = ev.concerns || '';
+                document.getElementById('commendations').value = ev.commendations || '';
+                document.getElementById('recommendations').value = ev.recommendations || '';
+                updateCharCount(document.getElementById('concerns'));
+                updateCharCount(document.getElementById('commendations'));
+                updateCharCount(document.getElementById('recommendations'));
+
+                // Star ratings
+                if (ev.starRatings) {
+                    Object.entries(ev.starRatings).forEach(([name, val]) => {
+                        starRatings[name] = val;
+                        const group = document.querySelector(`.mini-stars[data-name="${name}"]`);
+                        if (group) group.querySelectorAll('i').forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= val));
+                    });
+                }
+
+                // Executive ratings
+                if (ev.executiveRatings) {
+                    Object.entries(ev.executiveRatings).forEach(([eid, val]) => {
+                        execRatings[eid] = val;
+                        const group = document.querySelector(`.exec-stars[data-exec="${eid}"]`);
+                        if (group) group.querySelectorAll('i').forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= val));
+                    });
+                }
+
+                // Issue
+                if (ev.issue) {
+                    if (ev.issue.title) document.getElementById('issueTitle').value = ev.issue.title;
+                    if (ev.issue.location) document.getElementById('issueLocation').value = ev.issue.location;
+                    if (ev.issue.priority) document.getElementById('issuePriority').value = ev.issue.priority;
+                    if (ev.issue.description) document.getElementById('issueDescription').value = ev.issue.description;
+                    if (ev.issue.category) {
+                        document.getElementById('issueCategory').value = ev.issue.category;
+                        document.querySelectorAll('.issue-cat').forEach(c => {
+                            c.classList.toggle('active', c.dataset.cat === ev.issue.category);
+                        });
+                    }
+                    updateCharCount(document.getElementById('issueDescription'));
+                }
+
+                // Anonymous toggle pre-fill
+                if (document.getElementById('anonymousToggle')) {
+                    document.getElementById('anonymousToggle').checked = !!ev.isAnonymous;
+                }
+            }
+        };
+
+        // Step navigation
+        let currentStep = 1;
+        function updateStepIndicator(n) {
+            document.querySelectorAll('.step-indicator .step').forEach((s, i) => {
+                const sn = i + 1; s.classList.remove('active', 'completed');
+                if (sn === n) s.classList.add('active');
+                else if (sn < n) s.classList.add('completed');
+            });
+            document.querySelectorAll('.step-line').forEach((l, i) => {
+                l.classList.remove('active', 'completed');
+                if (i + 1 < n) l.classList.add('completed');
+                else if (i + 1 === n) l.classList.add('active');
+            });
+            updateSummary();
+            triggerAnimations();
+        }
+        window.goToStep = function(n) {
+            const cur = document.getElementById('step' + currentStep);
+            const next = document.getElementById('step' + n);
+            const goingForward = n > currentStep;
+            cur.classList.add(goingForward ? 'slide-out-left' : 'slide-out-right');
+            setTimeout(() => {
+                cur.classList.remove('active', 'slide-out-left', 'slide-out-right');
+                next.classList.add('active', goingForward ? 'slide-in-right' : 'slide-in-left');
+                setTimeout(() => next.classList.remove('slide-in-right', 'slide-in-left'), 400);
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                updateStepIndicator(n);
+                currentStep = n;
+            }, 320);
+        };
+
+
+        function triggerAnimations() {
+            const step = document.getElementById('step' + currentStep);
+            step.querySelectorAll('.animate-on-scroll').forEach((el, i) => {
+                el.classList.remove('visible');
+                setTimeout(() => el.classList.add('visible'), i * 100 + 100);
+            });
+        }
+        triggerAnimations();
+
+        // Slider
+        const track = document.getElementById('sliderTrack');
+        const fill = document.getElementById('sliderFill');
+        const thumb = document.getElementById('sliderThumb');
+        const ratingInput = document.getElementById('ratingInput');
+        const ratingNumber = document.getElementById('ratingNumber');
+        const ratingLabel = document.getElementById('ratingLabel');
+        const ratingArc = document.getElementById('ratingArc');
+        const circ = 2 * Math.PI * 85;
+        let dragging = false;
+
+        window.updateRating = function(v) {
+            v = Math.max(0, Math.min(100, Math.round(v)));
+            const pct = v / 100;
+            fill.style.width = pct * 100 + '%';
+            thumb.style.left = pct * 100 + '%';
+            ratingInput.value = v;
+            ratingNumber.textContent = v;
+            ratingArc.style.strokeDasharray = circ;
+            ratingArc.style.strokeDashoffset = circ - circ * pct;
+            let color, label;
+            if (v <= 20) { color = '#DC3545'; label = 'Very Poor'; }
+            else if (v <= 40) { color = '#E85D6A'; label = 'Below Average'; }
+            else if (v <= 55) { color = '#E8B933'; label = 'Average'; }
+            else if (v <= 70) { color = '#D4A020'; label = 'Good'; }
+            else if (v <= 85) { color = '#34E876'; label = 'Very Good'; }
+            else { color = '#25D366'; label = 'Excellent'; }
+            ratingLabel.textContent = label;
+            ratingLabel.style.color = color;
+            const g1 = document.querySelector('#ratingGradient stop:first-child');
+            if (g1) g1.setAttribute('stop-color', color);
+        };
+
+        function posToVal(cx) { const r = track.getBoundingClientRect(); return ((cx - r.left) / r.width) * 100; }
+        track.addEventListener('mousedown', e => { dragging = true; updateRating(posToVal(e.clientX)); });
+        document.addEventListener('mousemove', e => { if (dragging) updateRating(posToVal(e.clientX)); });
+        document.addEventListener('mouseup', () => { dragging = false; });
+        track.addEventListener('touchstart', e => { dragging = true; updateRating(posToVal(e.touches[0].clientX)); }, {passive:true});
+        document.addEventListener('touchmove', e => { if (dragging) updateRating(posToVal(e.touches[0].clientX)); }, {passive:true});
+        document.addEventListener('touchend', () => { dragging = false; });
+        updateRating(50);
+
+        // Star ratings
+        const starRatings = {};
+        document.querySelectorAll('.mini-stars').forEach(group => {
+            const stars = group.querySelectorAll('i'); let cur = 0;
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', () => { const v = parseInt(star.dataset.value); stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= v)); });
+                star.addEventListener('mouseleave', () => { stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
+                star.addEventListener('click', () => { cur = parseInt(star.dataset.value); starRatings[group.dataset.name] = cur; stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
+            });
+        });
+
+        // Executive ratings
+        const execRatings = {};
+        function loadExecutives() {
+            const execs = DataStore.getExecutives(); const grid = document.getElementById('execGrid');
+            if (execs.length === 0) { grid.innerHTML = '<div class="exec-empty"><i class="fas fa-users"></i><p>No executives have been added yet.</p></div>'; return; }
+            grid.innerHTML = execs.map(exec => {
+                const initials = exec.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                return `<div class="exec-card"><div class="exec-avatar">${initials}</div><div class="exec-name">${exec.name}</div><div class="exec-portfolio">${exec.portfolio}</div><div class="exec-stars" data-exec="${exec.id}">${[1,2,3,4,5].map(v => `<i class="fas fa-star" data-value="${v}"></i>`).join('')}</div></div>`;
+            }).join('');
+            grid.querySelectorAll('.exec-stars').forEach(group => {
+                const stars = group.querySelectorAll('i'); let cur = 0;
+                stars.forEach(star => {
+                    star.addEventListener('mouseenter', () => { const v = parseInt(star.dataset.value); stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= v)); });
+                    star.addEventListener('mouseleave', () => { stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
+                    star.addEventListener('click', () => { cur = parseInt(star.dataset.value); execRatings[group.dataset.exec] = cur; stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.value) <= cur)); });
+                });
+            });
+        }
+        loadExecutives();
+
+        // Tags
+        document.querySelectorAll('.tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+                const body = tag.closest('.card-body');
+                if (body) {
+                    const ta = body.querySelector('textarea');
+                    if (tag.classList.contains('selected')) { ta.value = ta.value.trim() ? ta.value + '\n• ' + tag.textContent : '• ' + tag.textContent; }
+                    else { ta.value = ta.value.replace('\n• ' + tag.textContent, '').replace('• ' + tag.textContent, '').trim(); }
+                    updateCharCount(ta);
+                }
+            });
+        });
+
+        // Char counts
+        const charMap = [{id:'concerns',counter:'concernCount',max:1000},{id:'commendations',counter:'commendCount',max:1000},{id:'recommendations',counter:'recommendCount',max:1000},{id:'issueDescription',counter:'issueDescCount',max:2000}];
+        window.updateCharCount = function(ta) {
+            const m = charMap.find(x => x.id === ta.id);
+            if (m) { if (ta.value.length > m.max) ta.value = ta.value.substring(0, m.max); document.getElementById(m.counter).textContent = ta.value.length; }
+        };
+        charMap.forEach(m => { document.getElementById(m.id).addEventListener('input', function() { updateCharCount(this); }); });
+
+        // Issue categories
+        document.querySelectorAll('.issue-cat').forEach(cat => {
+            cat.addEventListener('click', () => {
+                document.querySelectorAll('.issue-cat').forEach(c => c.classList.remove('active'));
+                cat.classList.add('active');
+                document.getElementById('issueCategory').value = cat.dataset.cat;
+            });
+        });
+
+        // Summary
+        function updateSummary() {
+            document.getElementById('summaryRating').textContent = ratingInput.value + '%';
+            const fc = [document.getElementById('concerns').value.trim(), document.getElementById('commendations').value.trim(), document.getElementById('recommendations').value.trim()].filter(Boolean).length;
+            document.getElementById('summaryFeedback').textContent = fc + ' / 3 completed';
+            document.getElementById('summaryIssue').textContent = document.getElementById('issueTitle').value.trim() ? 'Reported' : 'Not reported';
+
+            const isAnon = document.getElementById('anonymousToggle')?.checked;
+            const modeEl = document.getElementById('summaryAnonMode');
+            const iconEl = document.getElementById('summaryAnonIcon');
+            if (modeEl) modeEl.textContent = isAnon ? 'Anonymous' : 'Verified';
+            if (iconEl) iconEl.innerHTML = isAnon ? '<i class="fas fa-user-secret" style="color:var(--accent);"></i>' : '<i class="fas fa-user-check" style="color:var(--primary-light);"></i>';
+
+            let filled = 1;
+            if (document.getElementById('concerns').value.trim()) filled++;
+            if (document.getElementById('commendations').value.trim()) filled++;
+            if (document.getElementById('recommendations').value.trim()) filled++;
+            if (document.getElementById('issueTitle').value.trim()) filled++;
+            if (document.getElementById('issueDescription').value.trim()) filled++;
+            document.getElementById('progressFill').style.width = (filled / 6 * 100) + '%';
+        }
+
+        const anonToggle = document.getElementById('anonymousToggle');
+        if (anonToggle) {
+            anonToggle.addEventListener('change', updateSummary);
+        }
+
+        // Form submit
+        document.getElementById('evaluationForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.classList.add('loading'); btn.disabled = true;
+
+            const isAnonymous = document.getElementById('anonymousToggle').checked;
+            const data = {
+                userId: user.indexNumber,
+                userName: user.name,
+                isAnonymous: isAnonymous,
+                overallRating: ratingInput.value,
+                starRatings: { ...starRatings },
+                executiveRatings: { ...execRatings },
+                concerns: document.getElementById('concerns').value,
+                commendations: document.getElementById('commendations').value,
+                recommendations: document.getElementById('recommendations').value,
+                selectedTags: Array.from(document.querySelectorAll('.tag.selected')).map(t => ({ category: t.dataset.category, text: t.textContent })),
+                issue: {
+                    category: document.getElementById('issueCategory').value,
+                    title: document.getElementById('issueTitle').value,
+                    location: document.getElementById('issueLocation').value,
+                    priority: document.getElementById('issuePriority').value,
+                    description: document.getElementById('issueDescription').value
+                }
+            };
+
+            setTimeout(() => {
+                if (isEditMode) {
+                    const res = DataStore.updateEvaluation(user.indexNumber, data);
+                    if (res && res.success === false) {
+                        alert(res.message);
+                        btn.classList.remove('loading'); btn.disabled = false;
+                        return;
+                    }
+                    document.getElementById('modalTitle').textContent = 'Updated & Finalized!';
+                    document.getElementById('modalMessage').textContent = 'Your evaluation has been updated successfully. Your 1-time edit has been recorded and your responses are now final.';
+                } else {
+                    DataStore.addEvaluation(data);
+                    document.getElementById('modalTitle').textContent = 'Thank You!';
+                    document.getElementById('modalMessage').textContent = 'Your evaluation has been submitted successfully.';
+                }
+                btn.classList.remove('loading'); btn.classList.add('success');
+                setTimeout(() => { document.getElementById('successModal').classList.add('open'); createConfetti(); }, 400);
+            }, 1500);
+        });
+
+        function createConfetti() {
+            const c = document.getElementById('confetti');
+            c.innerHTML = '';
+            const cols = ['#25D366','#34E876','#D4A020','#E8B933','#5BF09A','#DC3545'];
+            for (let i = 0; i < 50; i++) {
+                const p = document.createElement('div');
+                p.style.cssText = `position:absolute;width:${Math.random()*10+4}px;height:${Math.random()*10+4}px;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};left:${Math.random()*100}%;top:-10px;animation:confFall ${Math.random()*2+1}s ease ${Math.random()*0.5}s forwards;`;
+                c.appendChild(p);
+            }
+            if (!document.getElementById('confStyle')) {
+                const s = document.createElement('style'); s.id = 'confStyle';
+                s.textContent = '@keyframes confFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(350px) rotate(720deg);opacity:0}}';
+                document.head.appendChild(s);
+            }
+        }
+
+        window.closeModal = function() {
+            document.getElementById('successModal').classList.remove('open');
+            // Show responses view
+            showMyResponses();
+            const btn = document.getElementById('submitBtn');
+            btn.classList.remove('success'); btn.disabled = false;
+        };
+
+        window.logout = function() { DataStore.logoutUser(); window.location.href = 'index.html'; };
+    });
+    </script>
+</body>
+</html>

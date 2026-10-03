@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register â€” CCHN SRC Evaluation</title>
+    <link rel="icon" type="image/jpeg" href="images/favicon.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Motionless Fixed Campus Background -->
+    <div class="fixed-campus-background">
+        <img src="images/campus-building.jpg" alt="Campus">
+    </div>
+
+    <div class="login-page">
+
+        <div class="login-card">
+            <div class="login-logo">
+                <img src="images/logo-full.jpg" alt="CCHN Logo">
+                <h1>Create Account</h1>
+                <div class="school-name">College of Community Health Nursing, Winneba</div>
+                <p>Register to evaluate the SRC Board</p>
+            </div>
+
+            <div class="error-msg" id="errorMsg"><i class="fas fa-exclamation-circle"></i><span id="errorText"></span></div>
+            <div class="success-msg" id="successMsg"><i class="fas fa-check-circle"></i><span id="successText"></span></div>
+
+            <form class="login-form" id="registerForm">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="fullName" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Index Number</label>
+                    <input type="text" id="indexNumber" placeholder="Enter your index number" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" placeholder="Create a password" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-lock"></i> Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%;justify-content:center;">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+            </form>
+
+            <div class="login-form-divider"><span>CCHN SRC Portal</span></div>
+
+            <div class="login-links">
+                <a href="index.html">Already have an account? <strong>Sign in</strong></a>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        // Register
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('fullName').value.trim();
+            const indexNumber = document.getElementById('indexNumber').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const errorText = document.getElementById('errorText');
+            const successMsg = document.getElementById('successMsg');
+            const successText = document.getElementById('successText');
+
+            errorMsg.classList.remove('show');
+            successMsg.classList.remove('show');
+
+            if (!name || !indexNumber || !password || !confirmPassword) {
+                errorText.textContent = 'Please fill in all fields.';
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (password.length < 4) {
+                errorText.textContent = 'Password must be at least 4 characters.';
+                errorMsg.classList.add('show');
+                return;
+            }
+            if (password !== confirmPassword) {
+                errorText.textContent = 'Passwords do not match.';
+                errorMsg.classList.add('show');
+                return;
+            }
+
+            const result = DataStore.addUser({ name, indexNumber, password });
+            if (result.success) {
+                successText.textContent = 'Account created! Redirecting to login...';
+                successMsg.classList.add('show');
+                setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+            } else {
+                errorText.textContent = result.message;
+                errorMsg.classList.add('show');
+            }
+        });
+    </script>
+</body>
+</html>
