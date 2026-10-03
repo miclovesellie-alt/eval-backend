@@ -8,6 +8,322 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Mobile Admin Rules (iPhone SE, 7, 7 Plus, XR, 11 & all small devices <= 900px) */
+        @media (max-width: 900px) {
+            html, body {
+                overflow-x: hidden !important;
+                width: 100% !important;
+                position: relative;
+            }
+            #adminPanel {
+                display: block !important;
+                width: 100% !important;
+                overflow-x: hidden !important;
+                position: relative;
+            }
+            .admin-mobile-header {
+                display: flex !important;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 14px;
+                height: 52px;
+                background: rgba(8, 22, 14, 0.98);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-bottom: 1px solid rgba(37, 211, 102, 0.2);
+                position: sticky;
+                top: 0;
+                z-index: 1000;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .admin-hamburger {
+                background: rgba(37, 211, 102, 0.12);
+                border: 1px solid rgba(37, 211, 102, 0.25);
+                color: var(--primary-light);
+                width: 38px;
+                height: 38px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.1rem;
+                cursor: pointer;
+            }
+            .admin-mobile-brand {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .admin-mobile-brand img {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                border: 1px solid var(--primary);
+            }
+            .admin-mobile-brand span {
+                font-family: 'Playfair Display', serif;
+                font-weight: 800;
+                font-size: 0.98rem;
+                background: var(--gradient-primary);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            .admin-mobile-logout {
+                background: rgba(220, 53, 69, 0.12);
+                border: 1px solid rgba(220, 53, 69, 0.25);
+                color: var(--danger);
+                width: 38px;
+                height: 38px;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                cursor: pointer;
+            }
+
+            /* Off-canvas Sidebar Drawer */
+            .admin-sidebar {
+                display: flex !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                width: 270px !important;
+                max-width: 80vw !important;
+                z-index: 2000 !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: 10px 0 40px rgba(0,0,0,0.85);
+                background: #08160E !important;
+            }
+            .admin-sidebar.mobile-open {
+                transform: translateX(0) !important;
+            }
+            .sidebar-backdrop {
+                display: block !important;
+                position: fixed !important;
+                inset: 0 !important;
+                background: rgba(0, 0, 0, 0.75) !important;
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+                z-index: 1999 !important;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+            }
+            .sidebar-backdrop.active {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+
+            /* Admin Main */
+            .admin-main {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
+                overflow-x: hidden !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            /* Institutional Banner */
+            .admin-institution-banner {
+                position: relative !important;
+                top: auto !important;
+                padding: 12px 14px !important;
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .banner-left {
+                width: 100% !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 10px !important;
+            }
+            .banner-left img {
+                width: 36px !important;
+                height: 36px !important;
+                flex-shrink: 0 !important;
+            }
+            .banner-left h2 {
+                font-size: 0.82rem !important;
+                line-height: 1.25 !important;
+            }
+            .banner-left p {
+                font-size: 0.7rem !important;
+            }
+            .banner-right {
+                width: 100% !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+            .banner-pill {
+                font-size: 0.68rem !important;
+                padding: 4px 8px !important;
+            }
+
+            /* Tab Content */
+            .tab-content {
+                padding: 16px 12px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow-x: hidden !important;
+            }
+            .admin-header h1 {
+                font-size: 1.35rem !important;
+                margin-bottom: 4px !important;
+            }
+            .admin-header p {
+                font-size: 0.8rem !important;
+                line-height: 1.4 !important;
+            }
+
+            /* Stat Grid */
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+                width: 100% !important;
+                margin-bottom: 16px !important;
+            }
+            .admin-stat-card {
+                padding: 12px 10px !important;
+                border-radius: 10px !important;
+            }
+            .stat-icon {
+                width: 34px !important;
+                height: 34px !important;
+                font-size: 0.9rem !important;
+                margin-bottom: 8px !important;
+            }
+            .stat-value {
+                font-size: 1.45rem !important;
+            }
+            .stat-title {
+                font-size: 0.68rem !important;
+                letter-spacing: 0.5px !important;
+            }
+            .stat-sub {
+                font-size: 0.65rem !important;
+            }
+
+            /* Analytics Grid */
+            .analytics-grid {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+                width: 100% !important;
+            }
+            .analytics-card {
+                padding: 14px 12px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .category-badges-grid {
+                grid-template-columns: 1fr !important;
+                gap: 6px !important;
+            }
+            .category-badge-item[style*="span 2"] {
+                grid-column: span 1 !important;
+            }
+
+            /* Toolbars */
+            .toolbar {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+                padding: 12px 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .toolbar h3 {
+                font-size: 0.92rem !important;
+            }
+            .toolbar input[type="text"] {
+                max-width: 100% !important;
+                min-width: 0 !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            .toolbar-actions {
+                width: 100% !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+            }
+            .toolbar-actions button, .toolbar-actions a {
+                flex: 1 !important;
+                justify-content: center !important;
+                font-size: 0.78rem !important;
+                padding: 8px 10px !important;
+            }
+
+            /* Tables: Smooth Horizontal Scroll on Mobile */
+            #recentTable, #execTable, #adminTable, #studentTable, #editedResponsesTable, #responsesTable {
+                width: 100% !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                display: block !important;
+                border-radius: 10px !important;
+                margin-bottom: 14px !important;
+                box-sizing: border-box !important;
+            }
+            .data-table {
+                width: 100% !important;
+                min-width: 580px !important;
+            }
+            .data-table th, .data-table td {
+                padding: 9px 10px !important;
+                font-size: 0.8rem !important;
+                white-space: nowrap !important;
+            }
+            .action-btns {
+                flex-wrap: nowrap !important;
+                min-width: auto !important;
+            }
+
+            /* Modals */
+            .modal-overlay {
+                padding: 10px !important;
+            }
+            .modal, .modal.wide {
+                max-width: 95vw !important;
+                width: 95vw !important;
+                max-height: 90vh !important;
+                padding: 16px 14px !important;
+                border-radius: 16px !important;
+                box-sizing: border-box !important;
+            }
+            .modal.wide .modal-body {
+                padding: 14px 4px !important;
+                max-height: 68vh !important;
+            }
+            .modal-actions {
+                flex-direction: column-reverse !important;
+                gap: 8px !important;
+                width: 100% !important;
+            }
+            .modal-actions button {
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            /* Section Block */
+            .section-block-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 6px !important;
+                padding: 10px 12px !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Motionless Fixed Campus Background -->
@@ -457,7 +773,7 @@
         if (yrEl) yrEl.textContent = acadYear + ' Academic Session';
 
         document.getElementById('adminLogin').style.display = 'none';
-        document.getElementById('adminPanel').style.display = 'flex';
+        document.getElementById('adminPanel').style.display = 'block';
         document.getElementById('adminName').textContent = currentAdmin.name || 'Super Administrator';
         document.getElementById('dashAdminName').textContent = currentAdmin.name || 'Super Administrator';
         try { loadDashboard(); } catch (e) { console.error('Dashboard error:', e); }

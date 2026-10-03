@@ -1226,6 +1226,11 @@ select option { background: var(--bg-card); color: var(--text-primary); }
         opacity: 1;
         pointer-events: auto;
     }
+    #adminPanel {
+        display: block !important;
+        width: 100% !important;
+        position: relative !important;
+    }
     .admin-main {
         margin-left: 0 !important;
         width: 100% !important;
