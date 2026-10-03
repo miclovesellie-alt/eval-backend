@@ -126,6 +126,24 @@
             50% { transform: scale(1.08); box-shadow: 0 0 22px var(--primary); }
         }
         .page-nav { padding: 28px 0 40px; display: flex; gap: 12px; justify-content: flex-end; }
+
+        /* Scoped mobile refinements for evaluate.html */
+        @media (max-width: 768px) {
+            .section-title { font-size: 1.45rem !important; }
+            .section-desc { font-size: 0.84rem !important; }
+            .submit-summary { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+            .anon-toggle-row { padding: 12px 14px !important; }
+            .my-response { padding: 16px 12px !important; }
+            .response-card { padding: 18px 14px !important; }
+            .page-nav { padding: 16px 0 32px !important; }
+        }
+        @media (max-width: 480px) {
+            .submit-summary { grid-template-columns: 1fr !important; }
+            .anon-toggle-row { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+            .toggle-switch { align-self: flex-start; }
+            .response-actions { flex-direction: column !important; }
+            .response-actions button { width: 100% !important; justify-content: center !important; }
+        }
     </style>
 </head>
 <body>

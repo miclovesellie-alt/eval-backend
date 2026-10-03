@@ -38,8 +38,23 @@
 
     <!-- ADMIN PANEL -->
     <div id="adminPanel" style="display:none;">
+        <!-- Mobile Header Bar (Screen <= 900px) -->
+        <div class="admin-mobile-header">
+            <button type="button" class="admin-hamburger" id="adminMenuToggle" aria-label="Open Navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="admin-mobile-brand">
+                <img src="images/logo-full.jpg" alt="Logo">
+                <span>SRC Admin</span>
+            </div>
+            <button type="button" class="admin-mobile-logout" onclick="adminLogout()" title="Sign Out">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+        </div>
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
         <!-- Sidebar -->
-        <div class="admin-sidebar">
+        <div class="admin-sidebar" id="adminSidebar">
             <div class="sidebar-header">
                 <img src="images/favicon.jpg" alt="Logo">
                 <h2>SRC Governance</h2>
@@ -460,13 +475,38 @@
     }
     window.adminLogout = adminLogout;
 
+    // ---- Mobile Drawer Toggle ----
+    const adminToggle = document.getElementById('adminMenuToggle');
+    const adminSidebar = document.getElementById('adminSidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+
+    function toggleMobileSidebar(open) {
+        if (!adminSidebar) return;
+        if (open) {
+            adminSidebar.classList.add('mobile-open');
+            if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        } else {
+            adminSidebar.classList.remove('mobile-open');
+            if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    if (adminToggle) adminToggle.addEventListener('click', () => toggleMobileSidebar(true));
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', () => toggleMobileSidebar(false));
+
     // ---- Tab Navigation ----
     document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
         item.addEventListener('click', () => {
             document.querySelectorAll('.sidebar-nav .nav-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.getElementById('tab-' + item.dataset.tab).classList.add('active');
+            const targetTab = document.getElementById('tab-' + item.dataset.tab);
+            if (targetTab) targetTab.classList.add('active');
+            if (window.innerWidth <= 900) {
+                toggleMobileSidebar(false);
+            }
         });
     });
 
